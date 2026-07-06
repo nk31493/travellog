@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>캘린더 - 트래블로그</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --bg-main: #F5F6F8;
+            --bg-card: #ffffff;
+            --bg-cell: #FAFBFC;
+            --text-primary: #191F28;
+            --text-secondary: #6B7684;
+            --text-muted: #B0B8C1;
+            --border-color: #E5E8EB;
+            --accent: #1B6DFF;
+            --accent-hover: #1557D4;
+        }
+
+        [data-theme="dark"] {
+            --bg-main: #15171C;
+            --bg-card: #1E2128;
+            --bg-cell: #262A33;
+            --text-primary: #F0F2F5;
+            --text-secondary: #9BA3AF;
+            --text-muted: #6B7280;
+            --border-color: #2D3139;
+            --accent: #4D8DFF;
+            --accent-hover: #3D7AEF;
+        }
+
+        * { box-sizing: border-box; }
+        body { background: var(--bg-main); font-family: 'Noto Sans KR', sans-serif; margin: 0; }
+        .nav-bar {
+            background: var(--bg-card);
+            padding: 14px 24px;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .brand { font-size: 18px; font-weight: 700; color: var(--accent); text-decoration: none; }
+        .nav-link { color: var(--text-secondary); text-decoration: none; font-size: 13px; margin-left: 12px; }
+        .container-main { max-width: 900px; margin: 0 auto; padding: 28px 20px; }
+        .calendar-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        .month-title { font-size: 20px; font-weight: 700; color: var(--text-primary); }
+        .nav-btn {
+            background: var(--bg-card);
+            border: 1.5px solid var(--border-color);
+            color: var(--text-secondary);
+            width: 36px;
+            height: 36px;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        .nav-btn:hover { background: var(--bg-main); }
+        .calendar-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 6px;
+            background: var(--bg-card);
+            border-radius: 16px;
+            padding: 20px;
+        }
+        .weekday {
+            text-align: center;
+            font-size: 12px;
+            font-weight: 700;
+            color: var(--text-muted);
+            padding: 8px 0;
+        }
+        .day-cell {
+            min-height: 80px;
+            border-radius: 8px;
+            padding: 6px;
+            background: var(--bg-cell);
+            position: relative;
+        }
+        .day-cell.empty { background: transparent; }
+        .day-num { font-size: 12px; font-weight: 600; color: var(--text-secondary); margin-bottom: 4px; }
+        .day-cell.today .day-num {
+            background: var(--accent);
+            color: white;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .trip-chip {
+            font-size: 10px;
+            background: var(--accent);
+            color: white;
+            padding: 2px 6px;
+            border-radius: 6px;
+            margin-bottom: 2px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            cursor: pointer;
+            display: block;
+        }
+        .trip-chip:hover { background: var(--accent-hover); }
+    </style>
+</head>
+<body>
+    <nav class="nav-bar">
+        <a class="brand" href="/trips">✈️ 트래블로그</a>
+        <div style="display:flex;align-items:center;gap:12px;">
+            <a href="/trips" class="nav-link">← 내 여행</a>
+            <a href="/mypage" class="nav-link">👤 마이페이지</a>
+
+            <!-- 알림 버튼 -->
+            <div style="position:relative;">
+                <button onclick="toggleNotifications()" id="notiBtn"
+                        style="background:none;border:none;font-size:20px;cursor:pointer;position:relative;">
+                    🔔
+                </button>
+                <span id="notiCount"
+                    style="display:none;position:absolute;top:-4px;right:-4px;background:#FF6B6B;color:white;font-size:10px;font-weight:700;width:16px;height:16px;border-radius:50%;display:flex;align-items:center;justify-content:center;">
+                    0
+                </span>
+            </div>
+            
+            <!-- 알림 드롭다운 -->
+            <div id="notiDropdown" style="display:none;position:absolute;top:56px;right:20px;width:320px;background:var(--bg-card);border-radius:16px;box-shadow:0 8px 32px rgba(0,0,0,0.12);z-index:200;overflow:hidden;">
+                <div style="padding:16px 20px;border-bottom:1px solid var(--border-light);display:flex;justify-content:space-between;align-items:center;">
+                    <span style="font-size:15px;font-weight:700;color:var(--text-primary);">알림</span>
+                    <button onclick="markAllRead()" style="background:none;border:none;font-size:12px;color:var(--accent);cursor:pointer;">모두 읽음</button>
+                </div>
+                <div id="notiList" style="max-height:360px;overflow-y:auto;"></div>
+            </div>
+
+            <button onclick="toggleTheme()" id="themeToggleBtn"
+                    style="background:none;border:1px solid #E5E8EB;border-radius:20px;padding:4px 12px;font-size:13px;cursor:pointer;color:#6B7684;">
+                🌙
+            </button>
+            <a href="/logout" class="nav-link">로그아웃</a>
+        </div>
+    </nav>
+
+    <div class="container-main">
+        <div class="calendar-header">
+            <button class="nav-btn" onclick="changeMonth(-1)">◀</button>
+            <div class="month-title" id="monthTitle"></div>
+            <button class="nav-btn" onclick="changeMonth(1)">▶</button>
+        </div>
+        <div class="calendar-grid" id="calendarGrid"></div>
+    </div>
+
+    <script>
+        function applyTheme(theme) {
+            document.documentElement.setAttribute('data-theme', theme);
+            document.getElementById('themeToggleBtn').textContent = theme === 'dark' ? '☀️' : '🌙';
+        }
+
+        function toggleTheme() {
+            const current = document.documentElement.getAttribute('data-theme');
+            const next = current === 'dark' ? 'light' : 'dark';
+            localStorage.setItem('theme', next);
+            applyTheme(next);
+        }
+
+        (function initTheme() {
+            const saved = localStorage.getItem('theme') || 'light';
+            applyTheme(saved);
+        })();
+
+        let currentYear = new Date().getFullYear();
+        let currentMonth = new Date().getMonth(); // 0-indexed
+        let allTrips = [];
+
+        const weekdays = ['일', '월', '화', '수', '목', '금', '토'];
+
+        function loadTrips() {
+            fetch('/api/calendar/trips')
+                .then(r => r.json())
+                .then(trips => {
+                    allTrips = trips;
+                    renderCalendar();
+                });
+        }
+
+        function changeMonth(delta) {
+            currentMonth += delta;
+            if (currentMonth < 0) { currentMonth = 11; currentYear--; }
+            if (currentMonth > 11) { currentMonth = 0; currentYear++; }
+            renderCalendar();
+        }
+
+        function getTripsForDate(dateStr) {
+            return allTrips.filter(t => {
+                if (!t.startDate) return false;
+                const end = t.endDate || t.startDate;
+                return dateStr >= t.startDate && dateStr <= end;
+            });
+        }
+
+        function renderCalendar() {
+            document.getElementById('monthTitle').textContent = `${currentYear}년 ${currentMonth + 1}월`;
+
+            const firstDay = new Date(currentYear, currentMonth, 1);
+            const lastDay = new Date(currentYear, currentMonth + 1, 0);
+            const startWeekday = firstDay.getDay();
+            const totalDays = lastDay.getDate();
+            const todayStr = new Date().toISOString().split('T')[0];
+
+            // 날짜별 대표 사진 경로 맵
+            const photoDateMap = {};
+            allTrips.forEach(t => {
+                if (t.photoDateMap) {
+                    Object.entries(t.photoDateMap).forEach(([date, path]) => {
+                        if (!photoDateMap[date]) photoDateMap[date] = path;
+                    });
+                }
+            });
+
+            let html = weekdays.map(w => `<div class="weekday">${w}</div>`).join('');
+
+            for (let i = 0; i < startWeekday; i++) {
+                html += `<div class="day-cell empty"></div>`;
+            }
+
+            for (let day = 1; day <= totalDays; day++) {
+                const dateStr = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+                const isToday = dateStr === todayStr;
+                const trips = getTripsForDate(dateStr);
+
+                const chips = trips.map(t =>
+                    `<a class="trip-chip" href="/trips/${t.routeId}?date=${dateStr}" title="${t.name}">${t.name}</a>`
+                ).join('');
+
+                const photoPath = photoDateMap[dateStr];
+                const tripForPhoto = trips.length > 0 ? trips[0] : null;
+                const photoIcon = photoPath && tripForPhoto
+                    ? `<a href="/trips/${tripForPhoto.routeId}?date=${dateStr}" style="display:block;margin-top:2px;">
+                        <img src="${photoPath}" style="width:100%;height:40px;object-fit:cover;border-radius:4px;">
+                    </a>`
+                    : '';
+
+                html += `
+                    <div class="day-cell ${isToday ? 'today' : ''}">
+                        <div class="day-num">${day}</div>
+                        ${chips}
+                        ${photoIcon}
+                    </div>`;
+            }
+
+            document.getElementById('calendarGrid').innerHTML = html;
+        }
+        loadTrips();
+    </script>
+    <script src="/js/notifications.js"></script>
+</body>
+</html>

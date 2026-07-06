@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>여행 이름 - 트래블로그</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --bg-main: #F5F6F8;
+            --bg-card: #ffffff;
+            --bg-subtle: #F0F4FF;
+            --text-primary: #191F28;
+            --text-secondary: #6B7684;
+            --text-muted: #B0B8C1;
+            --text-label: #4E5968;
+            --border-color: #E5E8EB;
+            --accent: #1B6DFF;
+            --accent-hover: #1557D4;
+        }
+
+        [data-theme="dark"] {
+            --bg-main: #15171C;
+            --bg-card: #1E2128;
+            --bg-subtle: #1A2740;
+            --text-primary: #F0F2F5;
+            --text-secondary: #9BA3AF;
+            --text-muted: #6B7280;
+            --text-label: #C0C5CC;
+            --border-color: #2D3139;
+            --accent: #4D8DFF;
+            --accent-hover: #3D7AEF;
+        }
+
+        * { box-sizing: border-box; }
+        body { background: var(--bg-main); font-family: 'Noto Sans KR', sans-serif; margin: 0; }
+        .nav-bar {
+            background: var(--bg-card);
+            padding: 16px 24px;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .brand { font-size: 20px; font-weight: 700; color: var(--accent); text-decoration: none; }
+        .progress-wrap { display: flex; gap: 4px; padding: 20px 24px 0; max-width: 480px; margin: 0 auto; }
+        .progress-step { flex: 1; height: 4px; background: var(--border-color); border-radius: 2px; }
+        .progress-step.active { background: var(--accent); }
+        .container-main { max-width: 480px; margin: 0 auto; padding: 32px 24px; }
+        .title { font-size: 26px; font-weight: 700; color: var(--text-primary); margin-bottom: 8px; }
+        .subtitle { font-size: 14px; color: var(--text-secondary); margin-bottom: 28px; }
+        .summary-card {
+            background: var(--bg-subtle);
+            border-radius: 16px;
+            padding: 18px 20px;
+            margin-bottom: 24px;
+        }
+        .summary-dest { font-size: 14px; font-weight: 700; color: var(--accent); margin-bottom: 4px; }
+        .summary-date { font-size: 13px; color: var(--text-label); }
+        .name-input {
+            width: 100%;
+            border: 2px solid var(--border-color);
+            border-radius: 12px;
+            padding: 16px 18px;
+            font-size: 18px;
+            font-weight: 600;
+            background: var(--bg-card);
+            color: var(--text-primary);
+            margin-bottom: 16px;
+        }
+        .name-input:focus { outline: none; border-color: var(--accent); }
+        .chips-label { font-size: 13px; color: var(--text-secondary); margin-bottom: 10px; }
+        .chips { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 28px; }
+        .chip {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 13px;
+            color: var(--text-label);
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+        .chip:hover { background: var(--bg-subtle); color: var(--accent); border-color: var(--accent); }
+        .start-btn {
+            background: var(--accent);
+            color: white;
+            border: none;
+            padding: 16px;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 700;
+            width: 100%;
+            cursor: pointer;
+        }
+        .start-btn:disabled { background: var(--border-color); color: var(--text-muted); cursor: not-allowed; }
+        .back-btn {
+            background: none;
+            border: none;
+            color: var(--text-secondary);
+            font-size: 14px;
+            cursor: pointer;
+            margin-bottom: 16px;
+            padding: 0;
+        }
+    </style>
+</head>
+<body>
+    <nav class="nav-bar">
+        <a class="brand" href="/trips">✈️ 트래블로그</a>
+        <a href="/trips" style="color:#6B7684;text-decoration:none;font-size:13px;">취소</a>
+    </nav>
+
+    <div class="progress-wrap">
+        <div class="progress-step active"></div>
+        <div class="progress-step active"></div>
+        <div class="progress-step active"></div>
+    </div>
+
+    <div class="container-main">
+        <button class="back-btn" onclick="location.href='/onboarding/dates'">← 이전</button>
+        <div class="title">여행 이름을 정해주세요 ✏️</div>
+        <div class="subtitle">나만의 여행 이름을 지어볼까요?</div>
+
+        <div class="summary-card">
+            <div class="summary-dest" id="summaryDest"></div>
+            <div class="summary-date" id="summaryDate"></div>
+        </div>
+
+        <input type="text" id="nameInput" class="name-input" placeholder="예: 첫 도쿄 여행">
+
+        <div class="chips-label">추천 이름</div>
+        <div class="chips" id="chips"></div>
+
+        <button class="start-btn" id="startBtn" disabled onclick="complete()">여행 시작하기 ✈️</button>
+    </div>
+
+    <script>
+        const destination = sessionStorage.getItem('destination');
+        const startDate = sessionStorage.getItem('startDate');
+        const endDate = sessionStorage.getItem('endDate');
+
+        if (!destination || !startDate || !endDate) {
+            location.href = '/onboarding/destination';
+        }
+
+        const days = Math.ceil((new Date(endDate) - new Date(startDate)) / (1000*60*60*24)) + 1;
+        const nights = days - 1;
+        const destName = destination.split(',')[0].trim();
+
+        document.getElementById('summaryDest').textContent = `📍 ${destination}`;
+        document.getElementById('summaryDate').textContent =
+            `📅 ${startDate} ~ ${endDate} (${nights}박 ${days}일)`;
+
+        const chips = [
+            `${destName} ${nights}박 ${days}일`,
+            `첫 ${destName} 여행`,
+            `힐링 ${destName}`,
+            `${destName} 맛집투어`,
+            `${destName} 여행기`,
+        ];
+
+        document.getElementById('chips').innerHTML = chips.map(c =>
+            `<div class="chip" onclick="setName('${c}')">${c}</div>`
+        ).join('');
+
+        function setName(name) {
+            document.getElementById('nameInput').value = name;
+            document.getElementById('startBtn').disabled = false;
+        }
+
+        document.getElementById('nameInput').addEventListener('input', (e) => {
+            document.getElementById('startBtn').disabled = !e.target.value.trim();
+        });
+
+        function complete() {
+            const name = document.getElementById('nameInput').value.trim();
+            if (!name) return;
+
+            document.getElementById('startBtn').disabled = true;
+            document.getElementById('startBtn').textContent = '여행 만드는 중...';
+
+            fetch('/api/onboarding/complete', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ name, destination, startDate, endDate })
+            })
+            .then(r => r.json())
+            .then(data => {
+                sessionStorage.clear();
+                location.href = `/trips/${data.routeId}`;
+            });
+        }
+
+        (function() {
+            const saved = localStorage.getItem('theme') || 'light';
+            document.documentElement.setAttribute('data-theme', saved);
+        })();
+</script>
+    </script>
+</body>
+</html>

@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>로그인 - 트래블로그</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --bg-main: #F5F6F8;
+            --bg-card: #ffffff;
+            --text-label: #4E5968;
+            --text-secondary: #6B7684;
+            --border-color: #E5E8EB;
+            --accent: #1B6DFF;
+            --accent-hover: #1557D4;
+            --danger: #FF6B6B;
+            --danger-bg: #FFD0D0;
+            --danger-bg-light: #FFF5F5;
+        }
+
+        [data-theme="dark"] {
+            --bg-main: #15171C;
+            --bg-card: #1E2128;
+            --text-label: #C0C5CC;
+            --text-secondary: #9BA3AF;
+            --border-color: #2D3139;
+            --accent: #4D8DFF;
+            --accent-hover: #3D7AEF;
+            --danger: #FF6B6B;
+            --danger-bg: #4A2A2A;
+            --danger-bg-light: #3A2222;
+        }
+
+        * { box-sizing: border-box; }
+        body { background: var(--bg-main); font-family: 'Noto Sans KR', sans-serif; margin: 0; }
+        .login-wrap {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        .login-card {
+            background: var(--bg-card);
+            border-radius: 20px;
+            padding: 40px 36px;
+            width: 100%;
+            max-width: 400px;
+        }
+        .brand {
+            text-align: center;
+            font-size: 24px;
+            font-weight: 700;
+            color: var(--accent);
+            margin-bottom: 8px;
+        }
+        .brand-sub {
+            text-align: center;
+            font-size: 13px;
+            color: var(--text-secondary);
+            margin-bottom: 32px;
+        }
+        .error-box {
+            background: var(--danger-bg-light);
+            border: 1px solid var(--danger-bg);
+            color: var(--danger);
+            border-radius: 10px;
+            padding: 12px 16px;
+            font-size: 13px;
+            margin-bottom: 16px;
+        }
+        .field-label { font-size: 13px; font-weight: 600; color: var(--text-label); margin-bottom: 6px; }
+        .field-input {
+            width: 100%;
+            border: 1.5px solid var(--border-color);
+            border-radius: 10px;
+            padding: 12px 16px;
+            font-size: 15px;
+            margin-bottom: 16px;
+            background: var(--bg-card);
+            color: var(--text-label);
+        }
+        .field-input:focus { outline: none; border-color: var(--accent); }
+        .login-btn {
+            background: var(--accent);
+            color: white;
+            border: none;
+            padding: 14px;
+            border-radius: 10px;
+            font-size: 15px;
+            font-weight: 700;
+            width: 100%;
+            cursor: pointer;
+            margin-top: 4px;
+        }
+        .login-btn:hover { background: var(--accent-hover); }
+        .signup-link {
+            text-align: center;
+            margin-top: 20px;
+            font-size: 13px;
+            color: var(--text-secondary);
+        }
+        .signup-link a { color: var(--accent); text-decoration: none; font-weight: 600; }
+    </style>
+</head>
+<script>
+    (function() {
+        const saved = localStorage.getItem('theme') || 'light';
+        document.documentElement.setAttribute('data-theme', saved);
+    })();
+</script>
+<body>
+    <div class="login-wrap">
+        <div class="login-card">
+            <div class="brand">✈️ 트래블로그</div>
+            <div class="brand-sub">나만의 여행 기록을 시작해보세요</div>
+
+            <div th:if="${param.error}" class="error-box">
+                이메일 또는 비밀번호가 올바르지 않아요.
+            </div>
+
+            <form th:action="@{/login}" method="post">
+                <div class="field-label">이메일</div>
+                <input type="email" name="username" class="field-input"
+                       placeholder="이메일 입력"
+                       autocomplete="email"
+                       required>
+
+                <div class="field-label">비밀번호</div>
+                <input type="password" name="password" class="field-input"
+                       placeholder="비밀번호 입력"
+                       autocomplete="current-password"
+                       required>
+                       <div style="display:flex;align-items:center;gap:8px;margin-bottom:16px;">
+                            <input type="checkbox" id="remember-me" name="remember-me"
+                                style="width:16px;height:16px;accent-color:#1B6DFF;">
+                            <label for="remember-me" style="font-size:13px;color:#6B7684;cursor:pointer;">
+                                로그인 유지
+                            </label>
+                        </div>
+
+                <button type="submit" class="login-btn">로그인</button>
+            </form>
+
+            <div class="signup-link">
+                아직 계정이 없으신가요? <a href="/signup">회원가입</a>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

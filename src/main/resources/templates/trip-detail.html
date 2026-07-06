@@ -1,0 +1,1525 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title th:text="${route.name} + ' - 트래블로그'"></title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --bg-main: #F5F6F8;
+            --bg-card: #ffffff;
+            --bg-subtle: #F0F4FF;
+            --bg-hover: #FAFBFC;
+            --text-primary: #191F28;
+            --text-secondary: #6B7684;
+            --text-muted: #B0B8C1;
+            --border-color: #E5E8EB;
+            --border-light: #F2F4F6;
+            --accent: #1B6DFF;
+            --accent-hover: #1557D4;
+            --danger: #FF6B6B;
+            --danger-bg: #FFD0D0;
+        }
+
+        [data-theme="dark"] {
+            --bg-main: #15171C;
+            --bg-card: #1E2128;
+            --bg-subtle: #1A2740;
+            --bg-hover: #262A33;
+            --text-primary: #F0F2F5;
+            --text-secondary: #9BA3AF;
+            --text-muted: #6B7280;
+            --border-color: #2D3139;
+            --border-light: #262A33;
+            --accent: #4D8DFF;
+            --accent-hover: #3D7AEF;
+            --danger: #FF6B6B;
+            --danger-bg: #4A2A2A;
+        }
+
+        .sortable-ghost { opacity: 0.4; background: var(--bg-subtle); }
+        .pin-num { cursor: grab; }
+        .pin-num:active { cursor: grabbing; }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { background: var(--bg-main); font-family: 'Noto Sans KR', sans-serif; }
+        .nav-bar {
+            background: var(--bg-card);
+            padding: 14px 24px;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+        .brand { font-size: 18px; font-weight: 700; color: var(--accent); text-decoration: none; }
+        .nav-right { display: flex; align-items: center; gap: 12px; }
+        .nav-link { color: var(--text-secondary); text-decoration: none; font-size: 13px; }
+        .cover {
+            background: linear-gradient(135deg, #1B6DFF 0%, #6FA8FF 100%);
+            padding: 32px 24px 24px;
+            color: white;
+        }
+        .cover-dest { font-size: 13px; font-weight: 600; opacity: 0.85; margin-bottom: 6px; }
+        .cover-name { font-size: 24px; font-weight: 700; margin-bottom: 8px; }
+        .cover-date { font-size: 13px; opacity: 0.85; }
+        .day-tabs-wrap {
+            background: var(--bg-card);
+            border-bottom: 1px solid var(--border-color);
+            padding: 0 16px;
+            display: flex;
+            gap: 0;
+            overflow-x: auto;
+            position: sticky;
+            top: 57px;
+            z-index: 99;
+        }
+        .day-tab {
+            padding: 14px 16px;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 500;
+            color: var(--text-secondary);
+            border-bottom: 2px solid transparent;
+            white-space: nowrap;
+            transition: all 0.15s;
+        }
+        .day-tab.active { color: var(--accent); border-bottom-color: var(--accent); font-weight: 700; }
+        .day-tab:hover { color: var(--accent); }
+        .main-layout {
+            display: grid;
+            grid-template-columns: 380px 1fr;
+            height: calc(100vh - 140px);
+            min-height: 600px;
+        }
+        .schedule-panel {
+            background: var(--bg-card);
+            border-right: 1px solid var(--border-color);
+            overflow-y: auto;
+            padding: 20px 0;
+        }
+        .panel-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 20px 16px;
+            border-bottom: 1px solid var(--border-light);
+        }
+        .panel-title { font-size: 15px; font-weight: 700; color: var(--text-primary); }
+        .add-pin-btn {
+            background: var(--accent);
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+        .add-pin-btn:hover { background: var(--accent-hover); }
+        .pin-list { padding: 12px 0; }
+        .pin-item {
+            display: flex;
+            gap: 12px;
+            padding: 14px 20px;
+            cursor: pointer;
+            transition: background 0.15s;
+            position: relative;
+        }
+        .pin-item:hover { background: var(--bg-hover); }
+        .pin-num {
+            width: 26px;
+            height: 26px;
+            background: var(--accent);
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            font-weight: 700;
+            flex-shrink: 0;
+            margin-top: 4px;
+        }
+        .pin-info { flex: 1; min-width: 0; }
+        .pin-time { font-size: 12px; color: var(--accent); font-weight: 600; margin-bottom: 3px; }
+        .pin-name { font-size: 14px; font-weight: 600; color: var(--text-primary); margin-bottom: 3px; }
+        .pin-memo { font-size: 12px; color: var(--text-secondary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .pin-actions {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            opacity: 0;
+            transition: opacity 0.15s;
+        }
+        .pin-item:hover .pin-actions { opacity: 1; }
+        .pin-act-btn {
+            background: none;
+            border: 1px solid var(--border-color);
+            color: var(--text-secondary);
+            padding: 3px 8px;
+            border-radius: 6px;
+            font-size: 11px;
+            cursor: pointer;
+            white-space: nowrap;
+        }
+        .pin-act-btn:hover { background: var(--bg-main); }
+        .pin-act-btn.danger { color: var(--danger); border-color: var(--danger-bg); }
+        .empty-day { text-align: center; padding: 48px 20px; color: var(--text-muted); }
+        .empty-day-emoji { font-size: 36px; margin-bottom: 12px; }
+        .empty-day-text { font-size: 14px; }
+        .map-panel { position: relative; height: 100%; min-height: 600px; }
+        #tripMap { width: 100%; height: 100%; min-height: 600px; }
+        @media (max-width: 900px) {
+            .main-layout {
+                grid-template-columns: 1fr;
+                height: auto;
+            }
+            .map-panel {
+                height: 300px;
+                order: -1; /* 지도를 일정 패널 위로 */
+            }
+            .schedule-panel {
+                height: auto;
+                max-height: none;
+                border-right: none;
+                border-bottom: 1px solid var(--border-color);
+            }
+            .cover {
+                padding: 20px 16px 16px;
+            }
+            .cover-name { font-size: 18px; }
+            .day-tabs-wrap { top: 57px; }
+            .panel-header { padding: 0 16px 12px; }
+            .pin-item { padding: 12px 16px; }
+        }
+
+        @media (max-width: 600px) {
+            .cover button {
+                font-size: 11px;
+                padding: 5px 10px;
+            }
+            .cover-name { font-size: 16px; }
+            .map-panel { height: 250px; }
+        }
+        .modal-content { border-radius: 16px; border: none; background: var(--bg-card); }
+        .modal-header { border-bottom: 1px solid var(--border-light); padding: 20px 24px; }
+        .modal-title { font-size: 16px; font-weight: 700; color: var(--text-primary); }
+        .modal-body { padding: 20px 24px; color: var(--text-primary); }
+        .modal-footer { border-top: 1px solid var(--border-light); padding: 16px 24px; }
+        .form-label { font-size: 13px; font-weight: 600; color: var(--text-secondary); margin-bottom: 6px; }
+        .form-control { border-radius: 10px; border: 1.5px solid var(--border-color); font-size: 14px; padding: 10px 14px; background: var(--bg-card); color: var(--text-primary); }
+        .form-control:focus { border-color: var(--accent); box-shadow: none; }
+        .modal-save-btn {
+            background: var(--accent);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 10px;
+            font-size: 14px;
+            font-weight: 700;
+            cursor: pointer;
+            width: 100%;
+        }
+        .modal-save-btn:hover { background: var(--accent-hover); }
+        .coord-badge {
+            background: var(--bg-subtle);
+            border-radius: 8px;
+            padding: 8px 12px;
+            font-size: 12px;
+            color: var(--accent);
+            margin-bottom: 12px;
+            display: none;
+        }
+        .search-result-item {
+            padding: 12px 16px;
+            font-size: 13px;
+            color: var(--text-primary);
+            cursor: pointer;
+            border-bottom: 1px solid var(--border-light);
+            background: var(--bg-card);
+        }
+        .search-result-item:hover { background: var(--bg-main); }
+        .search-result-item:last-child { border-bottom: none; }
+    </style>
+</head>
+<body>
+    <nav class="nav-bar">
+        <a class="brand" href="/trips">✈️ 트래블로그</a>
+        <div class="nav-right">
+            <a href="/trips" class="nav-link">← 내 여행</a>
+            <a href="/mypage" class="nav-link">👤 마이페이지</a>
+
+            <!-- 알림 버튼 -->
+            <div style="position:relative;">
+                <button onclick="toggleNotifications()" id="notiBtn"
+                        style="background:none;border:none;font-size:20px;cursor:pointer;position:relative;">
+                    🔔
+                </button>
+                <span id="notiCount"
+                    style="display:none;position:absolute;top:-4px;right:-4px;background:#FF6B6B;color:white;font-size:10px;font-weight:700;width:16px;height:16px;border-radius:50%;display:flex;align-items:center;justify-content:center;">
+                    0
+                </span>
+            </div>
+
+            <!-- 알림 드롭다운 -->
+            <div id="notiDropdown" style="display:none;position:absolute;top:56px;right:20px;width:320px;background:var(--bg-card);border-radius:16px;box-shadow:0 8px 32px rgba(0,0,0,0.12);z-index:200;overflow:hidden;">
+                <div style="padding:16px 20px;border-bottom:1px solid var(--border-light);display:flex;justify-content:space-between;align-items:center;">
+                    <span style="font-size:15px;font-weight:700;color:var(--text-primary);">알림</span>
+                    <button onclick="markAllRead()" style="background:none;border:none;font-size:12px;color:var(--accent);cursor:pointer;">모두 읽음</button>
+                </div>
+                <div id="notiList" style="max-height:360px;overflow-y:auto;"></div>
+            </div>
+
+            <button onclick="toggleTheme()" id="themeToggleBtn"
+                    style="background:none;border:1px solid #E5E8EB;border-radius:20px;padding:4px 12px;font-size:13px;cursor:pointer;color:#6B7684;">
+                🌙
+            </button>
+            <a href="/logout" class="nav-link">로그아웃</a>
+        </div>
+    </nav>
+
+    <div class="cover">
+        <div id="weatherInfo" style="margin-top:12px;font-size:13px;opacity:0.9;"></div>
+        <div class="cover-dest" th:text="'📍 ' + ${route.destination}"></div>
+        <div class="cover-name" th:text="${route.name}"></div>
+        <div class="cover-date">
+            📅 <span th:text="${route.startDate}"></span>
+            <span th:if="${route.endDate != null}"> ~ <span th:text="${route.endDate}"></span></span>
+        </div>
+        <button onclick="openEditModal()"
+                style="margin-top:12px;background:rgba(255,255,255,0.2);color:white;border:1px solid rgba(255,255,255,0.4);padding:6px 16px;border-radius:20px;font-size:12px;cursor:pointer;">
+            ✏️ 여행 정보 수정
+        </button>
+        <button onclick="shareTrip()"
+                style="margin-top:8px;margin-left:8px;background:rgba(255,255,255,0.2);color:white;border:1px solid rgba(255,255,255,0.4);padding:6px 16px;border-radius:20px;font-size:12px;cursor:pointer;">
+            🔗 공유하기
+        </button>
+        <button onclick="exportPDF()"
+                style="margin-top:12px;margin-left:8px;background:rgba(255,255,255,0.2);color:white;border:1px solid rgba(255,255,255,0.4);padding:6px 16px;border-radius:20px;font-size:12px;cursor:pointer;">
+            📄 PDF 저장
+        </button>
+        <button onclick="openChecklistModal()"
+            style="margin-top:8px;margin-left:8px;background:rgba(255,255,255,0.2);color:white;border:1px solid rgba(255,255,255,0.4);padding:6px 16px;border-radius:20px;font-size:12px;cursor:pointer;">
+            ✅ 체크리스트
+        </button>
+        <button onclick="openExpenseModal()"
+            style="margin-top:8px;margin-left:8px;background:rgba(255,255,255,0.2);color:white;border:1px solid rgba(255,255,255,0.4);padding:6px 16px;border-radius:20px;font-size:12px;cursor:pointer;">
+            💰 경비
+        </button>
+        <button onclick="openCollaboratorModal()"
+                style="margin-top:8px;margin-left:8px;background:rgba(255,255,255,0.2);color:white;border:1px solid rgba(255,255,255,0.4);padding:6px 16px;border-radius:20px;font-size:12px;cursor:pointer;">
+            👥 협업자
+        </button>
+        <button th:if="${!isOwner}" onclick="leaveTrip()"
+                style="margin-top:8px;margin-left:8px;background:rgba(255,80,80,0.25);color:white;border:1px solid rgba(255,255,255,0.4);padding:6px 16px;border-radius:20px;font-size:12px;cursor:pointer;">
+            🚪 나가기
+        </button>
+    </div>
+
+    <div class="day-tabs-wrap" id="dayTabs"></div>
+
+    <div class="main-layout">
+        <div class="schedule-panel">
+            <div class="panel-header">
+                <span class="panel-title" id="panelTitle">일정</span>
+                <button class="add-pin-btn" onclick="openPinModal()">🔍 장소 검색</button>
+            </div>
+            <div class="pin-list" id="pinList">
+                <div class="empty-day">
+                    <div class="empty-day-emoji">📍</div>
+                    <div class="empty-day-text">로딩 중...</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="map-panel">
+            <div id="tripMap"></div>
+        </div>
+    </div>
+
+    <!-- 핀 등록 모달 -->
+    <div class="modal fade" id="pinModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">📍 장소 추가</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">장소 검색</label>
+                        <input type="text" id="placeSearch" class="form-control"
+                               placeholder="🔍 장소명 검색 (예: 도쿄 타워)">
+                        <div id="searchResults" style="
+                            background: white;
+                            border: 1px solid #E5E8EB;
+                            border-radius: 10px;
+                            margin-top: 4px;
+                            overflow: hidden;
+                        "></div>
+                    </div>
+                    <div class="coord-badge" id="coordBadge"></div>
+                    <input type="hidden" id="pinLat">
+                    <input type="hidden" id="pinLng">
+                    <div class="mb-3">
+                        <label class="form-label">장소 이름 *</label>
+                        <input type="text" id="pinTitle" class="form-control" placeholder="예: 도쿄 타워">
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col-6">
+                            <label class="form-label">방문 날짜 *</label>
+                            <input type="date" id="pinDate" class="form-control">
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label">방문 시간</label>
+                            <input type="time" id="pinTime" class="form-control">
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">메모</label>
+                        <textarea id="pinMemo" class="form-control" rows="2"
+                                  placeholder="간단한 메모를 남겨보세요"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button class="modal-save-btn" onclick="savePin()">저장하기</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 여행 수정 모달 -->
+    <div class="modal fade" id="editTripModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">✏️ 여행 정보 수정</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">여행 이름</label>
+                        <input type="text" id="editName" class="form-control">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">여행지</label>
+                        <input type="text" id="editDest" class="form-control">
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col-6">
+                            <label class="form-label">시작일</label>
+                            <input type="date" id="editStart" class="form-control">
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label">종료일</label>
+                            <input type="date" id="editEnd" class="form-control">
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button class="modal-save-btn" onclick="saveTrip()">저장하기</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+        <!-- 협업자 모달 -->
+        <div class="modal fade" id="collaboratorModal" tabindex="-1">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">👥 협업자 관리</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <button th:if="${isOwner}" onclick="generateInviteLink()"
+                                style="width:100%;background:#1B6DFF;color:white;border:none;padding:12px;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;margin-bottom:16px;">
+                            🔗 초대 링크 생성하기
+                        </button>
+                        <div th:if="${isOwner}" style="margin-bottom:16px;">
+                            <div style="font-size:13px;font-weight:600;color:var(--text-secondary);margin-bottom:8px;">닉네임으로 초대</div>
+                            <div style="display:flex;gap:8px;">
+                                <input type="text" id="inviteNicknameInput"
+                                    placeholder="닉네임 입력"
+                                    style="flex:1;border:1.5px solid var(--border-color);border-radius:10px;padding:8px 12px;font-size:14px;background:var(--bg-card);color:var(--text-primary);">
+                                <button onclick="inviteByNickname()"
+                                        style="background:var(--accent);color:white;border:none;padding:8px 16px;border-radius:10px;font-size:14px;cursor:pointer;">초대</button>
+                            </div>
+                            <div id="inviteNicknameMsg" style="font-size:12px;margin-top:6px;display:none;"></div>
+                        </div>
+                        <div th:unless="${isOwner}" style="font-size:13px;color:#9747FF;background:#F5EFFF;padding:10px;border-radius:10px;margin-bottom:16px;text-align:center;">
+                            초대 링크는 여행 소유자만 만들 수 있어요
+                        </div>
+                        <div style="font-size:13px;font-weight:700;color:#4E5968;margin-bottom:8px;">참여 중인 사람</div>
+                        <div id="collaboratorList" style="max-height:240px;overflow-y:auto;">
+                            <div style="text-align:center;color:#B0B8C1;padding:20px;font-size:13px;">불러오는 중...</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 체크리스트 모달 -->
+        <div class="modal fade" id="checklistModal" tabindex="-1">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">✅ 체크리스트</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div style="display:flex;gap:8px;margin-bottom:16px;">
+                            <input type="text" id="checklistInput" class="form-control"
+                                placeholder="예: 여권, 충전기"
+                                onkeypress="if(event.key==='Enter') addChecklistItem()">
+                            <button onclick="addChecklistItem()"
+                                    style="background:#1B6DFF;color:white;border:none;padding:0 16px;border-radius:10px;font-size:14px;cursor:pointer;">추가</button>
+                        </div>
+                        <div id="checklistItems" style="max-height:300px;overflow-y:auto;"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 경비 모달 -->
+        <div class="modal fade" id="expenseModal" tabindex="-1">
+            <div class="modal-dialog modal-dialog-centered modal-lg">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">💰 여행 경비</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="row mb-2">
+                            <div class="col-4">
+                                <input type="text" id="expenseTitle" class="form-control" placeholder="항목 (예: 저녁식사)">
+                            </div>
+                            <div class="col-3">
+                                <input type="number" id="expenseAmount" class="form-control" placeholder="금액">
+                            </div>
+                            <div class="col-3">
+                                <select id="expenseCategory" class="form-select">
+                                    <option value="숙박">숙박</option>
+                                    <option value="항공">항공</option>
+                                    <option value="교통">교통</option>
+                                    <option value="관광">관광</option>
+                                    <option value="식비">식비</option>
+                                    <option value="쇼핑">쇼핑</option>
+                                    <option value="기타">기타</option>
+                                </select>
+                            </div>
+                            <div class="col-2">
+                                <button onclick="addExpense()"
+                                        style="width:100%;height:100%;background:#1B6DFF;color:white;border:none;border-radius:10px;font-size:13px;cursor:pointer;">추가</button>
+                            </div>
+                        </div>
+                        <div class="row mb-3">
+                            <div class="col-8">
+                                <input type="date" id="expenseDate" class="form-control">
+                            </div>
+                            <div class="col-4">
+                                <label style="display:flex;align-items:center;gap:6px;height:100%;font-size:13px;color:#4E5968;cursor:pointer;">
+                                    <input type="checkbox" id="expenseShared" style="width:16px;height:16px;cursor:pointer;">
+                                    함께 쓴 경비예요
+                                </label>
+                            </div>
+                        </div>
+
+                        <div style="display:flex;gap:8px;margin-bottom:16px;">
+                            <button onclick="showExpenseTab('mine')" id="tabMineBtn"
+                                    style="flex:1;padding:8px;border:1.5px solid #1B6DFF;background:#1B6DFF;color:white;border-radius:10px;font-size:13px;cursor:pointer;">내 지출</button>
+                            <button onclick="showExpenseTab('shared')" id="tabSharedBtn"
+                                    style="flex:1;padding:8px;border:1.5px solid #E5E8EB;background:white;color:#6B7684;border-radius:10px;font-size:13px;cursor:pointer;">공동 경비</button>
+                            <button onclick="showExpenseTab('settlement')" id="tabSettlementBtn"
+                                    style="flex:1;padding:8px;border:1.5px solid #E5E8EB;background:white;color:#6B7684;border-radius:10px;font-size:13px;cursor:pointer;">정산하기</button>
+                        </div>
+
+                        <div id="mineView">
+                            <div id="myExpenseTotal" style="background:#F0F4FF;border-radius:12px;padding:16px;margin-bottom:12px;text-align:center;"></div>
+                            <div id="myExpenseList" style="max-height:240px;overflow-y:auto;"></div>
+                        </div>
+
+                        <div id="sharedView" style="display:none;">
+                            <div id="sharedExpenseTotal" style="background:#F0F4FF;border-radius:12px;padding:16px;margin-bottom:12px;text-align:center;"></div>
+                            <div id="sharedExpenseList" style="max-height:280px;overflow-y:auto;"></div>
+                        </div>
+
+                        <div id="settlementView" style="display:none;">
+                            <div id="settlementContent"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- 경비 수정 모달 -->
+        <div class="modal fade" id="editExpenseModal" tabindex="-1">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">✏️ 지출 수정</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <input type="hidden" id="editExpenseId">
+                        <div class="mb-3">
+                            <label class="form-label">항목</label>
+                            <input type="text" id="editExpenseTitle" class="form-control">
+                        </div>
+                        <div class="row mb-3">
+                            <div class="col-6">
+                                <label class="form-label">금액</label>
+                                <input type="number" id="editExpenseAmount" class="form-control">
+                            </div>
+                            <div class="col-6">
+                                <label class="form-label">카테고리</label>
+                                <select id="editExpenseCategory" class="form-select">
+                                    <option value="숙박">숙박</option>
+                                    <option value="항공">항공</option>
+                                    <option value="교통">교통</option>
+                                    <option value="관광">관광</option>
+                                    <option value="식비">식비</option>
+                                    <option value="쇼핑">쇼핑</option>
+                                    <option value="기타">기타</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">날짜</label>
+                            <input type="date" id="editExpenseDate" class="form-control">
+                        </div>
+                        <div class="mb-3">
+                            <label style="display:flex;align-items:center;gap:6px;font-size:13px;color:#4E5968;cursor:pointer;">
+                                <input type="checkbox" id="editExpenseShared" style="width:16px;height:16px;cursor:pointer;">
+                                함께 쓴 경비예요
+                            </label>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button class="modal-save-btn" onclick="saveEditExpense()">저장하기</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script th:inline="javascript">
+        const isOwner = /*[[${isOwner}]]*/ false;
+        const routeId = [[${route.id}]];
+        const routeStartDate = [[${route.startDate}]];
+        const routeEndDate = [[${route.endDate}]];
+
+        let tripMap;
+        let allPins = [];
+        let forecastByDate = {};
+        let groupedPins = {};
+        let currentDate = null;
+        let mapMarkers = [];
+        let mapPolyline = null;
+        let pinModal;
+        let stompClient = null;
+
+        function applyTheme(theme) {
+            document.documentElement.setAttribute('data-theme', theme);
+            document.getElementById('themeToggleBtn').textContent = theme === 'dark' ? '☀️' : '🌙';
+        }
+
+        function toggleTheme() {
+            const current = document.documentElement.getAttribute('data-theme');
+            const next = current === 'dark' ? 'light' : 'dark';
+            localStorage.setItem('theme', next);
+            applyTheme(next);
+        }
+
+        (function initTheme() {
+            const saved = localStorage.getItem('theme') || 'light';
+            applyTheme(saved);
+        })();
+
+        function connectWebSocket() {
+            const socket = new SockJS('/ws');
+            stompClient = new StompJs.Client({
+                webSocketFactory: () => socket,
+                reconnectDelay: 5000,
+                onConnect: () => {
+                    stompClient.subscribe(`/topic/trip/${routeId}`, (message) => {
+                        const event = message.body;
+                        console.log('실시간 업데이트:', event);
+
+                        if (event === 'PIN_CHANGED') {
+                            loadPins();
+                        } else if (event === 'COMMENT_CHANGED') {
+                            // 핀 상세 페이지가 아니라 여행 상세 페이지라 댓글 갱신은 큰 영향 없음 (필요시 확장)
+                        } else if (event === 'CHECKLIST_CHANGED') {
+                            if (document.getElementById('checklistModal').classList.contains('show')) {
+                                loadChecklist();
+                            }
+                        } else if (event === 'EXPENSE_CHANGED') {
+                            if (document.getElementById('expenseModal').classList.contains('show')) {
+                                loadMyExpenses();
+                                loadSharedExpenses();
+                            }
+                        }
+                    });
+                }
+            });
+            stompClient.activate();
+        }
+
+        document.addEventListener('DOMContentLoaded', connectWebSocket);
+
+        function initMap() {
+            tripMap = new google.maps.Map(document.getElementById('tripMap'), {
+                center: { lat: 36.5, lng: 127.5 },
+                zoom: 7,
+                styles: [{ featureType: 'poi', stylers: [{ visibility: 'off' }] }]
+            });
+
+            // URL에 날짜 파라미터가 있으면 해당 날짜를 선택
+            const urlParams = new URLSearchParams(window.location.search);
+            const dateParam = urlParams.get('date');
+            if (dateParam) {
+                currentDate = dateParam;
+            }
+
+            loadPins();
+            pinModal = new bootstrap.Modal(document.getElementById('pinModal'));
+
+            // 장소 검색
+            const placeSearch = document.getElementById('placeSearch');
+            placeSearch.addEventListener('input', async () => {
+                const query = placeSearch.value.trim();
+                if (query.length < 2) {
+                    document.getElementById('searchResults').innerHTML = '';
+                    return;
+                }
+                try {
+                    const { Place } = await google.maps.importLibrary('places');
+                    const { places } = await Place.searchByText({
+                        textQuery: query,
+                        language: 'ko',
+                        region: 'kr',
+                        maxResultCount: 5,
+                        fields: ['displayName', 'location', 'formattedAddress', 'id']
+                    });
+                    const container = document.getElementById('searchResults');
+                    if (places.length === 0) {
+                        container.innerHTML = '<div class="search-result-item" style="color:#B0B8C1;">검색 결과가 없어요</div>';
+                        return;
+                    }
+                    container.innerHTML = places.map(p => {
+                        const name = (p.displayName || '').replace(/'/g, "\\'");
+                        const lat = p.location.lat();
+                        const lng = p.location.lng();
+                        return `<div class="search-result-item"
+                            onclick="selectLatLng(${lat}, ${lng}, '${name}')">
+                            📍 ${p.displayName}
+                            <div style="font-size:11px;color:#6B7684;">${p.formattedAddress || ''}</div>
+                        </div>`;
+                    }).join('');
+                } catch(e) {
+                    console.error('검색 오류:', e);
+                }
+            });
+
+            // 모달 닫힌 후 지도 리사이즈
+            document.getElementById('pinModal').addEventListener('hidden.bs.modal', () => {
+                setTimeout(() => {
+                    google.maps.event.trigger(tripMap, 'resize');
+                    renderMap();
+                }, 100);
+            });
+
+            // 날씨 로딩
+            fetch(`/api/trips/${routeId}/weather`)
+                .then(r => r.json())
+                .then(data => {
+                    if (data.weather && data.main) {
+                        const temp = Math.round(data.main.temp);
+                        const desc = data.weather[0].description;
+                        const icon = data.weather[0].icon;
+                        document.getElementById('weatherInfo').innerHTML = `
+                            <img src="https://openweathermap.org/img/wn/${icon}.png"
+                                style="width:28px;height:28px;vertical-align:middle;">
+                            ${temp}°C · ${desc}
+                        `;
+                    }
+                })
+                .catch(() => {});
+
+            // 5일 예보 로딩
+            fetch(`/api/trips/${routeId}/forecast`)
+                .then(r => r.json())
+                .then(data => {
+                    if (data.list) {
+                        data.list.forEach(item => {
+                            const date = item.dt_txt.split(' ')[0];
+                            if (!forecastByDate[date]) {
+                                forecastByDate[date] = item;
+                            }
+                        });
+                    }
+                    renderDayTabs();
+                })
+                .catch(() => {});
+        }
+
+        function selectLatLng(lat, lng, name) {
+            document.getElementById('pinLat').value = lat;
+            document.getElementById('pinLng').value = lng;
+            document.getElementById('coordBadge').style.display = 'block';
+            document.getElementById('coordBadge').textContent = `📍 ${name}`;
+            document.getElementById('pinTitle').value = name;
+            document.getElementById('searchResults').innerHTML = '';
+            document.getElementById('placeSearch').value = name;
+            tripMap.panTo({ lat, lng });
+            tripMap.setZoom(15);
+        }
+
+        function loadPins() {
+            fetch(`/api/trips/${routeId}/pins`)
+                .then(r => r.json())
+                .then(pins => {
+                    allPins = pins;
+                    groupPins(pins);
+                    renderDayTabs();
+                    if (Object.keys(groupedPins).length > 0 && !currentDate) {
+                        currentDate = Object.keys(groupedPins).sort()[0];
+                    }
+                    renderPinList();
+                    if (tripMap) renderMap();
+                });
+        }
+
+        function groupPins(pins) {
+            groupedPins = {};
+            if (routeStartDate && routeEndDate) {
+                let d = new Date(routeStartDate);
+                const end = new Date(routeEndDate);
+                while (d <= end) {
+                    const key = d.toISOString().split('T')[0];
+                    groupedPins[key] = [];
+                    d.setDate(d.getDate() + 1);
+                }
+            }
+            pins.forEach(pin => {
+                if (!groupedPins[pin.visitDate]) groupedPins[pin.visitDate] = [];
+                groupedPins[pin.visitDate].push(pin);
+            });
+        }
+
+        function renderDayTabs() {
+            const dates = Object.keys(groupedPins).sort();
+            let html = '';
+            dates.forEach((date, idx) => {
+                const d = new Date(date);
+                const label = `${d.getMonth()+1}/${d.getDate()}`;
+                const isActive = date === currentDate ? 'active' : '';
+                const forecast = forecastByDate[date];
+                const weatherHtml = forecast
+                    ? `<img src="https://openweathermap.org/img/wn/${forecast.weather[0].icon}.png"
+                        style="width:18px;height:18px;vertical-align:middle;">
+                    <span style="font-size:11px;">${Math.round(forecast.main.temp)}°</span>`
+                    : '';
+                html += `<div class="day-tab ${isActive}" onclick="selectDay('${date}')">
+                    Day ${idx+1} <span style="font-size:11px;opacity:0.7;">${label}</span>
+                    ${weatherHtml}
+                </div>`;
+            });
+            document.getElementById('dayTabs').innerHTML = html;
+        }
+
+        function selectDay(date) {
+            currentDate = date;
+            renderDayTabs();
+            renderPinList();
+            renderMap();
+        }
+
+        function renderPinList() {
+            const pins = groupedPins[currentDate] || [];
+
+            document.getElementById('panelTitle').textContent =
+                `${currentDate} (Day ${Object.keys(groupedPins).sort().indexOf(currentDate) + 1})`;
+
+            if (pins.length === 0) {
+                document.getElementById('pinList').innerHTML = `
+                    <div class="empty-day">
+                        <div class="empty-day-emoji">📍</div>
+                        <div class="empty-day-text">아직 추가된 장소가 없어요<br>장소 검색 버튼을 눌러보세요</div>
+                    </div>`;
+                return;
+            }
+
+            let html = '';
+            pins.forEach((pin, idx) => {
+                const time = pin.visitTime
+                    ? `<div class="pin-time">🕐 ${pin.visitTime.substring(0,5)}</div>` : '';
+                const memo = pin.memo
+                    ? `<div class="pin-memo">${pin.memo}</div>`
+                    : `<div class="pin-memo" style="color:#B0B8C1;">메모 없음</div>`;
+                const ratingHtml = pin.rating
+                    ? `<div style="font-size:11px;color:#F59E0B;margin-bottom:2px;">${'⭐'.repeat(pin.rating)}</div>`
+                    : '';
+                html += `
+                    <div class="pin-item" data-pin-id="${pin.pinId}" 
+                        onclick="focusPin(${pin.latitude}, ${pin.longitude})">
+                        <div class="pin-num">${idx+1}</div>
+                        <div class="pin-info">
+                            ${time}
+                            <div class="pin-name">${pin.title}</div>
+                            ${ratingHtml}
+                            ${memo}
+                        </div>
+                        <div class="pin-actions">
+                            <button class="pin-act-btn"
+                                onclick="event.stopPropagation();location.href='/pin/${pin.pinId}'">상세</button>
+                            <button class="pin-act-btn danger"
+                                onclick="event.stopPropagation();deletePin(${pin.pinId})">삭제</button>
+                        </div>
+                    </div>`;
+            });
+            document.getElementById('pinList').innerHTML = html;
+
+            // 드래그 앤 드롭 초기화
+            const pinListEl = document.getElementById('pinList');
+            new Sortable(pinListEl, {
+                animation: 150,
+                handle: '.pin-num',
+                ghostClass: 'sortable-ghost',
+                onEnd: (evt) => {
+                    const items = pinListEl.querySelectorAll('.pin-item');
+                    const pinIds = [...items].map(el => parseInt(el.dataset.pinId));
+                    fetch('/api/pins/order', {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ routeId, pinIds })
+                    }).then(r => { if (r.ok) loadPins(); });
+                }
+            });
+        }
+
+        function renderMap() {
+            mapMarkers.forEach(m => m.setMap(null));
+            mapMarkers = [];
+            if (mapPolyline) mapPolyline.setMap(null);
+
+            google.maps.event.trigger(tripMap, 'resize');
+
+            const pins = (groupedPins[currentDate] || [])
+                .sort((a, b) => {
+                    if (!a.visitTime) return 1;
+                    if (!b.visitTime) return -1;
+                    return a.visitTime.localeCompare(b.visitTime);
+                });
+
+            if (pins.length === 0) return;
+
+            const bounds = new google.maps.LatLngBounds();
+            const path = [];
+
+            pins.forEach((pin, idx) => {
+                const pos = { lat: pin.latitude, lng: pin.longitude };
+                path.push(pos);
+                bounds.extend(pos);
+
+                const marker = new google.maps.Marker({
+                    map: tripMap,
+                    position: pos,
+                    label: { text: String(idx+1), color: 'white', fontWeight: 'bold', fontSize: '12px' },
+                    title: pin.title
+                });
+                mapMarkers.push(marker);
+            });
+
+            if (pins.length > 1) {
+                mapPolyline = new google.maps.Polyline({
+                    path,
+                    geodesic: true,
+                    strokeColor: '#1B6DFF',
+                    strokeOpacity: 0.8,
+                    strokeWeight: 3,
+                    map: tripMap
+                });
+                tripMap.fitBounds(bounds, 80);
+            } else {
+                tripMap.setCenter({ lat: pins[0].latitude, lng: pins[0].longitude });
+                tripMap.setZoom(14);
+            }
+        }
+
+        function focusPin(lat, lng) {
+            tripMap.panTo({ lat, lng });
+            tripMap.setZoom(15);
+        }
+
+        function openPinModal() {
+            document.getElementById('pinLat').value = '';
+            document.getElementById('pinLng').value = '';
+            document.getElementById('coordBadge').style.display = 'none';
+            document.getElementById('placeSearch').value = '';
+            document.getElementById('searchResults').innerHTML = '';
+            document.getElementById('pinTitle').value = '';
+            document.getElementById('pinDate').value = currentDate || '';
+            document.getElementById('pinTime').value = '';
+            document.getElementById('pinMemo').value = '';
+
+            // 날짜 범위 제한
+            const dateInput = document.getElementById('pinDate');
+            dateInput.value = currentDate || '';
+            if (routeStartDate) dateInput.min = routeStartDate;
+            if (routeEndDate) dateInput.max = routeEndDate;
+
+            pinModal.show();
+        }
+
+        function savePin() {
+            const title = document.getElementById('pinTitle').value.trim();
+            const visitDate = document.getElementById('pinDate').value;
+            const lat = document.getElementById('pinLat').value;
+            const lng = document.getElementById('pinLng').value;
+
+            if (!title) { alert('장소 이름을 입력해주세요!'); return; }
+            if (!visitDate) { alert('방문 날짜를 입력해주세요!'); return; }
+            if (!lat || !lng) { alert('장소를 검색해서 위치를 선택해주세요!'); return; }
+
+            // 여행 날짜 범위 밖이면 차단
+            if (routeStartDate && routeEndDate) {
+                if (visitDate < routeStartDate || visitDate > routeEndDate) {
+                    alert(`여행 기간(${routeStartDate} ~ ${routeEndDate}) 안의 날짜만 선택할 수 있어요!`);
+                    return;
+                }
+            }
+
+            fetch('/api/pins', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    routeId: String(routeId),
+                    title,
+                    latitude: lat,
+                    longitude: lng,
+                    visitDate,
+                    visitTime: document.getElementById('pinTime').value,
+                    memo: document.getElementById('pinMemo').value
+                })
+            }).then(r => {
+                if (r.ok) {
+                    pinModal.hide();
+                    loadPins();
+                }
+            });
+        }
+
+        function deletePin(pinId) {
+            if (!confirm('이 장소를 삭제할까요?')) return;
+            fetch(`/api/pins/${pinId}`, { method: 'DELETE' })
+                .then(r => {
+                    if (r.ok) {
+                        // 로컬에서 즉시 제거
+                        allPins = allPins.filter(p => p.pinId !== pinId);
+                        groupPins(allPins);
+                        renderDayTabs();
+                        renderPinList();
+                        renderMap();
+                    }
+                });
+        }
+
+        function exportPDF() {
+            const routeName = document.querySelector('.cover-name').textContent;
+            const destination = document.querySelector('.cover-dest').textContent;
+            const date = document.querySelector('.cover-date').textContent;
+
+            // PDF용 HTML 생성
+            const dates = Object.keys(groupedPins).sort();
+            let content = `
+                <div style="font-family:'Noto Sans KR',sans-serif;padding:40px;max-width:800px;margin:0 auto;">
+                    <div style="background:linear-gradient(135deg,#1B6DFF,#6FA8FF);padding:32px;border-radius:16px;color:white;margin-bottom:32px;">
+                        <div style="font-size:13px;opacity:0.85;margin-bottom:6px;">${destination}</div>
+                        <div style="font-size:28px;font-weight:700;margin-bottom:8px;">${routeName}</div>
+                        <div style="font-size:13px;opacity:0.85;">${date}</div>
+                    </div>
+            `;
+
+            dates.forEach((date, dayIdx) => {
+                const pins = groupedPins[date] || [];
+                const d = new Date(date);
+                const label = `${d.getMonth()+1}월 ${d.getDate()}일`;
+
+                content += `
+                    <div style="margin-bottom:24px;">
+                        <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px;">
+                            <span style="background:#1B6DFF;color:white;padding:4px 14px;border-radius:20px;font-size:13px;font-weight:700;">Day ${dayIdx+1}</span>
+                            <span style="font-size:13px;color:#6B7684;">📅 ${label}</span>
+                        </div>
+                `;
+
+                if (pins.length === 0) {
+                    content += `<div style="color:#B0B8C1;font-size:13px;padding:12px 0;">일정 없음</div>`;
+                } else {
+                    pins.forEach((pin, idx) => {
+                        content += `
+                            <div style="display:flex;gap:12px;padding:12px 0;border-bottom:1px solid #F2F4F6;">
+                                <div style="width:26px;height:26px;background:#1B6DFF;color:white;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0;">${idx+1}</div>
+                                <div>
+                                    <div style="font-size:14px;font-weight:600;color:#191F28;">${pin.title}</div>
+                                    ${pin.visitTime ? `<div style="font-size:12px;color:#1B6DFF;">🕐 ${pin.visitTime.substring(0,5)}</div>` : ''}
+                                    ${pin.memo ? `<div style="font-size:12px;color:#6B7684;margin-top:2px;">${pin.memo}</div>` : ''}
+                                </div>
+                            </div>
+                        `;
+                    });
+                }
+                content += '</div>';
+            });
+
+            content += `
+                    <div style="text-align:center;margin-top:40px;color:#B0B8C1;font-size:12px;">
+                        ✈️ 트래블로그로 만든 여행 일정
+                    </div>
+                </div>
+            `;
+
+            const element = document.createElement('div');
+            element.innerHTML = content;
+            document.body.appendChild(element);
+
+            html2pdf().set({
+                margin: 0,
+                filename: `${routeName}.pdf`,
+                image: { type: 'jpeg', quality: 0.98 },
+                html2canvas: { scale: 2, useCORS: true },
+                jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+            }).from(element).save().then(() => {
+                document.body.removeChild(element);
+            });
+        }
+
+        function shareTrip() {
+                fetch(`/api/trips/${routeId}/share`, { method: 'POST' })
+                    .then(r => r.json())
+                    .then(data => {
+                        navigator.clipboard.writeText(data.shareUrl)
+                            .then(() => alert('공유 링크가 클립보드에 복사됐어요! 😊\n\n' + data.shareUrl))
+                            .catch(() => prompt('공유 링크를 복사해주세요:', data.shareUrl));
+                    });
+            }
+
+        let collaboratorModal;
+
+        function openCollaboratorModal() {
+            if (!collaboratorModal) {
+                collaboratorModal = new bootstrap.Modal(document.getElementById('collaboratorModal'));
+            }
+            loadCollaborators();
+            collaboratorModal.show();
+        }
+
+        function inviteByNickname() {
+            const nickname = document.getElementById('inviteNicknameInput').value.trim();
+            if (!nickname) { alert('닉네임을 입력해주세요!'); return; }
+
+            fetch(`/api/trips/${routeId}/invite/nickname`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ nickname })
+            }).then(r => {
+                const msgEl = document.getElementById('inviteNicknameMsg');
+                msgEl.style.display = 'block';
+                if (r.ok) {
+                    msgEl.style.color = '#1B6DFF';
+                    msgEl.textContent = `${nickname}님을 초대했어요!`;
+                    document.getElementById('inviteNicknameInput').value = '';
+                    loadCollaborators();
+                } else {
+                    r.text().then(msg => {
+                        msgEl.style.color = '#FF6B6B';
+                        msgEl.textContent = msg;
+                    });
+                }
+            });
+        }
+
+        function generateInviteLink() {
+            fetch(`/api/trips/${routeId}/invite`, { method: 'POST' })
+                .then(r => r.json())
+                .then(data => {
+                    navigator.clipboard.writeText(data.inviteUrl)
+                        .then(() => alert('초대 링크가 클립보드에 복사됐어요! 😊\n\n' + data.inviteUrl + '\n\n이 링크를 받은 사람은 함께 편집할 수 있어요.'))
+                        .catch(() => prompt('초대 링크를 복사해주세요:', data.inviteUrl));
+                });
+        }
+
+        function loadCollaborators() {
+            fetch(`/api/trips/${routeId}/collaborators`)
+                .then(r => r.json())
+                .then(collaborators => {
+                    if (collaborators.length === 0) {
+                        document.getElementById('collaboratorList').innerHTML =
+                            '<div style="text-align:center;color:#B0B8C1;padding:20px;font-size:13px;">아직 참여한 협업자가 없어요</div>';
+                        return;
+                    }
+                    document.getElementById('collaboratorList').innerHTML = collaborators.map(c => `
+                        <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid #F2F4F6;">
+                            <div>
+                                <div style="font-size:14px;font-weight:600;color:#191F28;">${c.nickname}</div>
+                                <div style="font-size:12px;color:#6B7684;">${c.email}</div>
+                            </div>
+                            ${isOwner ? `
+                                <button onclick="removeCollaborator(${c.userId})"
+                                        style="background:none;border:1px solid #FFD0D0;color:#FF6B6B;padding:4px 10px;border-radius:8px;font-size:12px;cursor:pointer;">
+                                    내쫓기
+                                </button>
+                            ` : ''}
+                        </div>
+                    `).join('');
+                });
+        }
+
+        function removeCollaborator(userId) {
+            if (!confirm('이 협업자를 내쫓을까요?')) return;
+            fetch(`/api/trips/${routeId}/collaborators/${userId}`, { method: 'DELETE' })
+                .then(r => { if (r.ok) loadCollaborators(); });
+        }
+
+        let checklistModal;
+
+        function openChecklistModal() {
+            if (!checklistModal) {
+                checklistModal = new bootstrap.Modal(document.getElementById('checklistModal'));
+            }
+            loadChecklist();
+            checklistModal.show();
+        }
+
+        function loadChecklist() {
+            fetch(`/api/trips/${routeId}/checklist`)
+                .then(r => r.json())
+                .then(items => {
+                    if (items.length === 0) {
+                        document.getElementById('checklistItems').innerHTML = `
+                            <div style="text-align:center;padding:20px 0;">
+                                <div style="font-size:36px;margin-bottom:12px;">📋</div>
+                                <div style="font-size:14px;color:var(--text-secondary, #6B7684);margin-bottom:16px;">아직 준비물이 없어요</div>
+                                <button onclick="fillDefaultChecklist()"
+                                        style="background:#1B6DFF;color:white;border:none;padding:10px 20px;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer;width:100%;">
+                                    ✅ 기본 준비물 자동 채우기
+                                </button>
+                                <div style="font-size:12px;color:var(--text-muted, #B0B8C1);margin-top:8px;">여권, 충전기, 상비약 등 11가지 기본 항목</div>
+                            </div>`;
+                        return;
+                    }
+                    document.getElementById('checklistItems').innerHTML = items.map(item => `
+                        <div style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid #F2F4F6;">
+                            <input type="checkbox" ${item.checked ? 'checked' : ''}
+                                onchange="toggleChecklistItem(${item.itemId})"
+                                style="width:18px;height:18px;cursor:pointer;">
+                            <span style="flex:1;font-size:14px;${item.checked ? 'color:#B0B8C1;text-decoration:line-through;' : 'color:#191F28;'}">${item.content}</span>
+                            <button onclick="deleteChecklistItem(${item.itemId})"
+                                    style="background:none;border:none;color:#B0B8C1;cursor:pointer;font-size:14px;">✕</button>
+                        </div>
+                    `).join('');
+                });
+        }
+
+        function fillDefaultChecklist() {
+            fetch(`/api/trips/${routeId}/checklist/default`, { method: 'POST' })
+                .then(r => { if (r.ok) loadChecklist(); });
+        }
+
+        function addChecklistItem() {
+            const content = document.getElementById('checklistInput').value.trim();
+            if (!content) return;
+            fetch(`/api/trips/${routeId}/checklist`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ content })
+            }).then(r => {
+                if (r.ok) {
+                    document.getElementById('checklistInput').value = '';
+                    loadChecklist();
+                }
+            });
+        }
+
+        function toggleChecklistItem(itemId) {
+            fetch(`/api/checklist/${itemId}/toggle`, { method: 'PUT' })
+                .then(r => { if (r.ok) loadChecklist(); });
+        }
+
+        function deleteChecklistItem(itemId) {
+            fetch(`/api/checklist/${itemId}`, { method: 'DELETE' })
+                .then(r => { if (r.ok) loadChecklist(); });
+        }
+
+        let expenseModal;
+        let editExpenseModal;
+        window._myExpenses = [];
+        window._sharedExpenses = [];
+
+        function openExpenseModal() {
+            if (!expenseModal) {
+                expenseModal = new bootstrap.Modal(document.getElementById('expenseModal'));
+            }
+            document.getElementById('expenseDate').value = new Date().toISOString().split('T')[0];
+            document.getElementById('expenseShared').checked = false;
+            showExpenseTab('mine');
+            expenseModal.show();
+        }
+
+        function setActiveTab(activeId) {
+            ['tabMineBtn', 'tabSharedBtn', 'tabSettlementBtn'].forEach(id => {
+                const btn = document.getElementById(id);
+                if (id === activeId) {
+                    btn.style.background = 'var(--accent)';
+                    btn.style.color = 'white';
+                    btn.style.borderColor = 'var(--accent)';
+                } else {
+                    btn.style.background = 'var(--bg-card)';
+                    btn.style.color = 'var(--text-secondary)';
+                    btn.style.borderColor = 'var(--border-color)';
+                }
+            });
+        }
+
+        function showExpenseTab(tab) {
+            document.getElementById('mineView').style.display = tab === 'mine' ? 'block' : 'none';
+            document.getElementById('sharedView').style.display = tab === 'shared' ? 'block' : 'none';
+            document.getElementById('settlementView').style.display = tab === 'settlement' ? 'block' : 'none';
+
+            if (tab === 'mine') { setActiveTab('tabMineBtn'); loadMyExpenses(); }
+            else if (tab === 'shared') { setActiveTab('tabSharedBtn'); loadSharedExpenses(); }
+            else { setActiveTab('tabSettlementBtn'); loadSettlement(); }
+        }
+
+        function loadMyExpenses() {
+            Promise.all([
+                fetch(`/api/trips/${routeId}/expenses/mine`).then(r => r.json()),
+                fetch(`/api/trips/${routeId}/expenses/total`).then(r => r.json())
+            ]).then(([expenses, totalData]) => {
+                window._myExpenses = expenses;
+
+                document.getElementById('myExpenseTotal').innerHTML = `
+                    <div style="font-size:13px;color:#6B7684;">내가 쓴 총 경비</div>
+                    <div style="font-size:24px;font-weight:700;color:#1B6DFF;">${totalData.total.toLocaleString()}원</div>
+                `;
+
+                if (expenses.length === 0) {
+                    document.getElementById('myExpenseList').innerHTML =
+                        '<div style="text-align:center;color:#B0B8C1;padding:20px;font-size:13px;">아직 등록된 지출이 없어요</div>';
+                    return;
+                }
+                document.getElementById('myExpenseList').innerHTML = expenses.map(e => renderExpenseRow(e)).join('');
+            });
+        }
+
+        function loadSharedExpenses() {
+            Promise.all([
+                fetch(`/api/trips/${routeId}/expenses/shared`).then(r => r.json()),
+                fetch(`/api/trips/${routeId}/expenses/shared/total`).then(r => r.json())
+            ]).then(([expenses, totalData]) => {
+                window._sharedExpenses = expenses;
+
+                document.getElementById('sharedExpenseTotal').innerHTML = `
+                    <div style="font-size:13px;color:#6B7684;">함께 쓴 총 경비</div>
+                    <div style="font-size:24px;font-weight:700;color:#1B6DFF;">${totalData.total.toLocaleString()}원</div>
+                `;
+
+                if (expenses.length === 0) {
+                    document.getElementById('sharedExpenseList').innerHTML =
+                        '<div style="text-align:center;color:#B0B8C1;padding:20px;font-size:13px;">아직 등록된 공동 경비가 없어요</div>';
+                    return;
+                }
+                document.getElementById('sharedExpenseList').innerHTML = expenses.map(e => renderExpenseRow(e)).join('');
+            });
+        }
+
+        function renderExpenseRow(e) {
+            return `
+                <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid #F2F4F6;">
+                    <div>
+                        <span style="font-size:12px;background:#F0F4FF;color:#1B6DFF;padding:2px 8px;border-radius:8px;margin-right:6px;">${e.category}</span>
+                        <span style="font-size:14px;font-weight:600;color:#191F28;">${e.title}</span>
+                        <div style="font-size:11px;color:#B0B8C1;margin-top:2px;">${e.expenseDate} · ${e.nickname}</div>
+                    </div>
+                    <div style="display:flex;align-items:center;gap:8px;">
+                        <span style="font-size:14px;font-weight:700;color:#191F28;">${e.amount.toLocaleString()}원</span>
+                        <button onclick="openEditExpense(${e.expenseId})"
+                                style="background:none;border:1px solid #E5E8EB;color:#6B7684;padding:3px 8px;border-radius:6px;font-size:11px;cursor:pointer;">수정</button>
+                        <button onclick="deleteExpense(${e.expenseId})"
+                                style="background:none;border:none;color:#B0B8C1;cursor:pointer;font-size:14px;">✕</button>
+                    </div>
+                </div>
+            `;
+        }
+
+        function addExpense() {
+            const title = document.getElementById('expenseTitle').value.trim();
+            const amount = document.getElementById('expenseAmount').value;
+            const category = document.getElementById('expenseCategory').value;
+            const expenseDate = document.getElementById('expenseDate').value;
+            const shared = document.getElementById('expenseShared').checked;
+
+            if (!title) { alert('항목을 입력해주세요!'); return; }
+            if (!amount || amount <= 0) { alert('금액을 입력해주세요!'); return; }
+
+            fetch(`/api/trips/${routeId}/expenses`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ title, amount, category, expenseDate, shared: String(shared) })
+            }).then(r => {
+                if (r.ok) {
+                    document.getElementById('expenseTitle').value = '';
+                    document.getElementById('expenseAmount').value = '';
+                    document.getElementById('expenseShared').checked = false;
+                    showExpenseTab(shared ? 'shared' : 'mine');
+                }
+            });
+        }
+
+        function deleteExpense(expenseId) {
+            fetch(`/api/expenses/${expenseId}`, { method: 'DELETE' })
+                .then(r => {
+                    if (r.ok) {
+                        loadMyExpenses();
+                        loadSharedExpenses();
+                    }
+                });
+        }
+
+        function openEditExpense(expenseId) {
+            const expense = [...window._myExpenses, ...window._sharedExpenses].find(e => e.expenseId === expenseId);
+            if (!expense) return;
+
+            document.getElementById('editExpenseId').value = expense.expenseId;
+            document.getElementById('editExpenseTitle').value = expense.title;
+            document.getElementById('editExpenseAmount').value = expense.amount;
+            document.getElementById('editExpenseCategory').value = expense.category;
+            document.getElementById('editExpenseDate').value = expense.expenseDate;
+            document.getElementById('editExpenseShared').checked = expense.shared;
+
+            if (!editExpenseModal) {
+                editExpenseModal = new bootstrap.Modal(document.getElementById('editExpenseModal'));
+            }
+            editExpenseModal.show();
+        }
+
+        function saveEditExpense() {
+            const expenseId = document.getElementById('editExpenseId').value;
+            const title = document.getElementById('editExpenseTitle').value.trim();
+            const amount = document.getElementById('editExpenseAmount').value;
+            const category = document.getElementById('editExpenseCategory').value;
+            const expenseDate = document.getElementById('editExpenseDate').value;
+            const shared = document.getElementById('editExpenseShared').checked;
+
+            if (!title) { alert('항목을 입력해주세요!'); return; }
+            if (!amount || amount <= 0) { alert('금액을 입력해주세요!'); return; }
+
+            fetch(`/api/expenses/${expenseId}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ title, amount, category, expenseDate, shared: String(shared) })
+            }).then(r => {
+                if (r.ok) {
+                    editExpenseModal.hide();
+                    loadMyExpenses();
+                    loadSharedExpenses();
+                }
+            });
+        }
+
+        function loadSettlement() {
+            fetch(`/api/trips/${routeId}/settlement`)
+                .then(r => r.json())
+                .then(expenses => {
+                    if (expenses.length === 0) {
+                        document.getElementById('settlementContent').innerHTML =
+                            '<div style="text-align:center;color:#B0B8C1;padding:30px;font-size:13px;">아직 공동 경비가 없어요</div>';
+                        return;
+                    }
+                    document.getElementById('settlementContent').innerHTML = expenses.map(e => `
+                        <div style="background:var(--bg-card);border:1px solid var(--border-light);border-radius:12px;padding:16px;margin-bottom:12px;">
+                            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+                                <div>
+                                    <span style="font-size:12px;background:var(--bg-subtle);color:var(--accent);padding:2px 8px;border-radius:8px;margin-right:6px;">${e.category}</span>
+                                    <span style="font-size:14px;font-weight:700;color:var(--text-primary);">${e.title}</span>
+                                </div>
+                                <span style="font-size:14px;font-weight:700;color:var(--text-primary);">${e.totalAmount.toLocaleString()}원</span>
+                            </div>
+                            <div style="font-size:12px;color:var(--text-secondary);margin-bottom:10px;">${e.payerNickname}님이 결제 · 1인당 ${e.perPerson.toLocaleString()}원</div>
+                            ${e.payers.map(p => `
+                                <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-top:1px solid var(--border-light);">
+                                    <div style="display:flex;align-items:center;gap:8px;">
+                                        <input type="checkbox" ${p.checked ? 'checked' : ''}
+                                            ${e.isPayer ? '' : 'disabled'}
+                                            onchange="toggleSettlement(${e.expenseId}, ${p.userId})"
+                                            style="width:16px;height:16px;${e.isPayer ? 'cursor:pointer;' : 'cursor:not-allowed;opacity:0.5;'}">
+                                        <span style="font-size:13px;${p.checked ? 'color:var(--text-muted);text-decoration:line-through;' : 'color:var(--text-primary);'}">${p.nickname}</span>
+                                    </div>
+                                    <span style="font-size:13px;font-weight:600;color:${p.checked ? 'var(--text-muted)' : 'var(--danger)'};">
+                                        ${p.checked ? '✓ 정산함' : p.amount.toLocaleString() + '원 보내야 함'}
+                                    </span>
+                                </div>
+                            `).join('')}
+                            ${!e.isPayer ? '<div style="font-size:11px;color:var(--text-muted);margin-top:8px;">결제자만 정산 여부를 체크할 수 있어요</div>' : ''}
+                        </div>
+                    `).join('');
+                });
+        }
+
+        function toggleSettlement(expenseId, userId) {
+            fetch(`/api/expenses/${expenseId}/settlement/${userId}/toggle`, { method: 'PUT' })
+                .then(r => { if (r.ok) loadSettlement(); });
+        }
+
+        function openEditModal() {
+            const name = /*[[${route.name}]]*/ '';
+            const dest = /*[[${route.destination}]]*/ '';
+            const start = /*[[${route.startDate}]]*/ '';
+            const end = /*[[${route.endDate}]]*/ '';
+            document.getElementById('editName').value = name;
+            document.getElementById('editDest').value = dest;
+            document.getElementById('editStart').value = start;
+            document.getElementById('editEnd').value = end || '';
+            new bootstrap.Modal(document.getElementById('editTripModal')).show();
+        }
+
+        function saveTrip() {
+            fetch(`/api/trips/${routeId}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    name: document.getElementById('editName').value,
+                    destination: document.getElementById('editDest').value,
+                    startDate: document.getElementById('editStart').value,
+                    endDate: document.getElementById('editEnd').value
+                })
+            }).then(r => {
+                if (r.ok) location.reload();
+            });
+
+        }
+
+        function leaveTrip() {
+            if (!confirm('이 여행 협업에서 나가시겠어요?')) return;
+            fetch(`/api/trips/${routeId}/leave`, { method: 'POST' })
+                .then(r => {
+                    if (r.ok) {
+                        alert('협업에서 나갔어요.');
+                        location.href = '/trips';
+                    }
+                });
+
+        }
+    </script>
+    <script th:src="@{'https://maps.googleapis.com/maps/api/js?key=' + ${googleMapsKey} + '&callback=initMap&loading=async'}" async></script>
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sockjs-client@1/dist/sockjs.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@stomp/stompjs@7/bundles/stomp.umd.min.js"></script>
+    <script src="/js/notifications.js"></script>
+</body>
+</html>

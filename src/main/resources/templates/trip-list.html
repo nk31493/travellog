@@ -1,0 +1,446 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>내 여행 - 트래블로그</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --bg-main: #F5F6F8;
+            --bg-card: #ffffff;
+            --bg-subtle: #F0F4FF;
+            --text-primary: #191F28;
+            --text-secondary: #6B7684;
+            --text-muted: #B0B8C1;
+            --border-color: #E5E8EB;
+            --accent: #1B6DFF;
+            --accent-hover: #1557D4;
+        }
+
+        [data-theme="dark"] {
+            --bg-main: #15171C;
+            --bg-card: #1E2128;
+            --bg-subtle: #1A2740;
+            --text-primary: #F0F2F5;
+            --text-secondary: #9BA3AF;
+            --text-muted: #6B7280;
+            --border-color: #2D3139;
+            --accent: #4D8DFF;
+            --accent-hover: #3D7AEF;
+        }
+
+        * { box-sizing: border-box; }
+        body { background: var(--bg-main); font-family: 'Noto Sans KR', sans-serif; margin: 0; }
+        .nav-bar {
+            background: var(--bg-card);
+            padding: 16px 24px;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+        .brand { font-size: 20px; font-weight: 700; color: var(--accent); text-decoration: none; }
+        .logout-btn { color: var(--text-secondary); text-decoration: none; font-size: 13px; }
+        .hero {
+            background: linear-gradient(135deg, #1B6DFF 0%, #6FA8FF 100%);
+            padding: 48px 24px;
+            text-align: center;
+            color: white;
+        }        
+        .hero-title { font-size: 28px; font-weight: 700; margin-bottom: 8px; }
+        .hero-sub { font-size: 15px; opacity: 0.9; margin-bottom: 28px; }
+        .new-trip-btn {
+            background: white;
+            color: #1B6DFF;
+            border: none;
+            padding: 14px 32px;
+            border-radius: 28px;
+            font-size: 15px;
+            font-weight: 700;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-block;
+        }
+        .new-trip-btn:hover { background: #F0F4FF; color: #1B6DFF; }
+        .container-main { max-width: 680px; margin: 0 auto; padding: 28px 20px; }
+        .section-title { font-size: 18px; font-weight: 700; color: var(--text-primary); margin-bottom: 16px; }
+        .trip-card {
+            background: var(--bg-card);
+            border-radius: 16px;
+            margin-bottom: 14px;
+            overflow: hidden;
+            cursor: pointer;
+            transition: box-shadow 0.15s;
+            text-decoration: none;
+            display: block;
+        }
+        .trip-card:hover { box-shadow: 0 4px 20px rgba(0,0,0,0.08); }
+        .trip-card-body { padding: 20px; display: flex; justify-content: space-between; align-items: center; }
+                .trip-dest {
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--accent);
+            background: var(--bg-subtle);
+            padding: 4px 10px;
+            border-radius: 20px;
+            display: inline-block;
+        }
+        .trip-name { font-size: 17px; font-weight: 700; color: var(--text-primary); margin-bottom: 6px; }
+        .trip-date { font-size: 13px; color: var(--text-secondary); }
+        .trip-pin-count {
+            background: var(--bg-main);
+            border-radius: 12px;
+            padding: 12px 16px;
+            text-align: center;
+            min-width: 60px;
+        }
+        .pin-count-num { font-size: 20px; font-weight: 700; color: var(--text-primary); }
+        .pin-count-label { font-size: 11px; color: var(--text-secondary); }
+        .trip-delete-btn {
+            background: none;
+            border: none;
+            color: #B0B8C1;
+            cursor: pointer;
+            font-size: 18px;
+            padding: 4px 8px;
+            margin-left: 8px;
+        }
+        .trip-delete-btn:hover { color: #FF6B6B; }
+        .empty-state { text-align: center; padding: 60px 20px; color: #B0B8C1; }
+        .empty-emoji { font-size: 48px; margin-bottom: 16px; }
+        .empty-title { font-size: 18px; font-weight: 600; color: #6B7684; margin-bottom: 8px; }
+        .empty-sub { font-size: 14px; }
+
+        .badge-upcoming { background: #F0F4FF; color: #1B6DFF; }
+        .badge-today { background: #FFF0F0; color: #FF6B6B; }
+        .badge-past { display: none; }
+
+        @media (max-width: 600px) {
+            .hero { padding: 32px 16px; }
+            .hero-title { font-size: 22px; }
+            .hero-sub { font-size: 13px; }
+            .new-trip-btn { padding: 12px 24px; font-size: 14px; }
+            .container-main { padding: 20px 14px; }
+            .section-title { font-size: 16px; }
+            .trip-card-body { padding: 14px; }
+            .trip-name { font-size: 15px; }
+            .trip-date { font-size: 12px; }
+            .trip-dest { font-size: 11px; }
+            .trip-flag img { width:28px; height:19px; }
+            .pin-count-num { font-size: 16px; }
+            .pin-count-label { font-size: 10px; }
+            .trip-pin-count { padding: 8px 10px; min-width: 46px; }
+            .nav-bar { padding: 12px 16px; }
+            .brand { font-size: 16px; }
+
+            /* 검색창 */
+            form { flex-wrap: wrap; }
+            form input { font-size: 13px; padding: 8px 12px; }
+            form button { padding: 8px 14px; font-size: 13px; }
+
+            /* 알림 드롭다운 */
+            #notiDropdown { width: calc(100vw - 32px); right: 16px; }
+
+            /* 뱃지들 */
+    .badge-today, .badge-upcoming { font-size: 10px; padding: 3px 7px; }
+}
+    </style>
+</head>
+<body>
+    <nav class="nav-bar">
+        <a class="brand" href="/trips">✈️ 트래블로그</a>
+        <div style="display:flex;gap:12px;align-items:center;">
+            <a href="/calendar" style="color:#6B7684;text-decoration:none;font-size:13px;">📅 캘린더</a>
+            <a href="/mypage" style="color:#6B7684;text-decoration:none;font-size:13px;">👤 마이페이지</a>
+
+            <!-- 알림 버튼 -->
+            <div style="position:relative;">
+                <button onclick="toggleNotifications()" id="notiBtn"
+                        style="background:none;border:none;font-size:20px;cursor:pointer;position:relative;">
+                    🔔
+                </button>
+                <span id="notiCount"
+                    style="display:none;position:absolute;top:-4px;right:-4px;background:#FF6B6B;color:white;font-size:10px;font-weight:700;width:16px;height:16px;border-radius:50%;display:flex;align-items:center;justify-content:center;">
+                    0
+                </span>
+            </div>
+
+            <!-- 알림 드롭다운 -->
+            <div id="notiDropdown" style="display:none;position:absolute;top:56px;right:20px;width:320px;background:var(--bg-card);border-radius:16px;box-shadow:0 8px 32px rgba(0,0,0,0.12);z-index:200;overflow:hidden;">
+                <div style="padding:16px 20px;border-bottom:1px solid var(--border-light);display:flex;justify-content:space-between;align-items:center;">
+                    <span style="font-size:15px;font-weight:700;color:var(--text-primary);">알림</span>
+                    <button onclick="markAllRead()" style="background:none;border:none;font-size:12px;color:var(--accent);cursor:pointer;">모두 읽음</button>
+                </div>
+                <div id="notiList" style="max-height:360px;overflow-y:auto;"></div>
+            </div>
+
+            <button onclick="toggleTheme()" id="themeToggleBtn"
+                    style="background:none;border:1px solid #E5E8EB;border-radius:20px;padding:4px 12px;font-size:13px;cursor:pointer;color:#6B7684;">
+                🌙
+            </button>
+            <a href="/logout" class="logout-btn">로그아웃</a>
+        </div>
+    </nav>
+
+    <div class="hero">
+        <div class="hero-title">나의 여행 기록 ✈️</div>
+        <div class="hero-sub">소중한 여행의 순간들을 기록해보세요</div>
+        <a href="/onboarding/destination" class="new-trip-btn">+ 새 여행 만들기</a>
+    </div>
+
+    <div class="container-main">
+        <div style="margin-bottom:20px;">
+            <form th:action="@{/trips}" method="get" style="display:flex;gap:8px;">
+                <input type="text" name="keyword" th:value="${keyword}"
+                    placeholder="🔍 여행 이름이나 목적지로 검색"
+                    style="flex:1;border:1.5px solid var(--border-color);border-radius:10px;padding:10px 14px;font-size:14px;background:var(--bg-card);color:var(--text-primary);">
+                <button type="submit"
+                        style="background:var(--accent);color:white;border:none;padding:10px 20px;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer;">검색</button>
+                <a th:if="${keyword != null and !#strings.isEmpty(keyword)}" href="/trips"
+                style="background:var(--bg-main);color:var(--text-secondary);border:none;padding:10px 16px;border-radius:10px;font-size:14px;text-decoration:none;display:flex;align-items:center;">초기화</a>
+            </form>
+        </div>
+
+        <!-- 빈 상태 -->
+        <div th:if="${#lists.isEmpty(activeRoutes) and #lists.isEmpty(doneRoutes)}" class="empty-state">
+            <div class="empty-emoji">🗺️</div>
+            <div class="empty-title">아직 여행이 없어요</div>
+            <div class="empty-sub">새 여행 만들기를 눌러 첫 여행을 기록해보세요!</div>
+        </div>
+
+        <!-- 진행 중 / 예정 여행 -->
+        <div th:if="${!#lists.isEmpty(activeRoutes)}">
+            <div class="section-title">내 여행 <span th:text="'(' + ${#lists.size(activeRoutes)} + ')'"></span></div>
+            <a th:each="route : ${activeRoutes}"
+            th:href="@{/trips/{id}(id=${route.id})}"
+            class="trip-card">
+                <div class="trip-card-body">
+                    <div style="flex:1;">
+                        <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
+                            <span class="trip-flag" th:data-dest="${route.destination}"></span>
+                            <span class="trip-dest" th:text="${route.destination}"></span>
+                            <span th:if="${collaboratingIds.contains(route.id) or hasCollaboratorIds.contains(route.id)}"
+                                style="font-size:11px;font-weight:700;color:#9747FF;background:#F5EFFF;padding:3px 8px;border-radius:10px;">👥 협업중</span>
+                            <th:block th:if="${route.startDate != null}"
+                                    th:with="dday=${T(java.time.temporal.ChronoUnit).DAYS.between(today, route.startDate)}">
+                                <span th:if="${dday == 0}"
+                                    style="font-size:12px;font-weight:700;padding:4px 10px;border-radius:20px;"
+                                    class="badge-today">D-DAY</span>
+                                <span th:if="${dday > 0}"
+                                    style="font-size:12px;font-weight:700;padding:4px 10px;border-radius:20px;"
+                                    class="badge-upcoming"
+                                    th:text="'D-' + ${dday}"></span>
+                                <span th:if="${dday < 0 and route.endDate != null and T(java.time.temporal.ChronoUnit).DAYS.between(today, route.endDate) >= 0}"
+                                    style="font-size:12px;font-weight:700;padding:4px 10px;border-radius:20px;background:#E8F5E9;color:#2E7D32;">진행 중</span>
+                            </th:block>
+                        </div>
+                        <div class="trip-name" th:text="${route.name}"></div>
+                        <div class="trip-date">
+                            📅 <span th:text="${route.startDate}"></span>
+                            <span th:if="${route.endDate != null}"> ~ </span>
+                            <span th:text="${route.endDate}"></span>
+                        </div>
+                    </div>
+                    <div style="display:flex;align-items:center;flex-shrink:0;">
+                        <div class="trip-pin-count">
+                            <div class="pin-count-num" th:text="${#lists.size(route.pins)}"></div>
+                            <div class="pin-count-label">핀</div>
+                        </div>
+                        <button th:unless="${collaboratingIds.contains(route.id)}"
+                                class="trip-delete-btn"
+                                th:onclick="'event.preventDefault(); deleteTrip(' + ${route.id} + ')'">✕</button>
+                    </div>
+                </div>
+            </a>
+        </div>
+
+        <!-- 완료된 여행 -->
+        <div th:if="${!#lists.isEmpty(doneRoutes)}" style="margin-top:24px;">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
+                <div class="section-title" style="margin-bottom:0;">완료된 여행 <span th:text="'(' + ${#lists.size(doneRoutes)} + ')'"></span></div>
+                <button onclick="toggleDoneTrips()" id="doneToggleBtn"
+                        style="background:none;border:1px solid var(--border-color);color:var(--text-secondary);padding:4px 12px;border-radius:20px;font-size:12px;cursor:pointer;">
+                    접기 ▲
+                </button>
+            </div>
+            <div id="doneTripsContainer">
+                <a th:each="route : ${doneRoutes}"
+                th:href="@{/trips/{id}(id=${route.id})}"
+                class="trip-card" style="opacity:0.7;">
+                    <div class="trip-card-body">
+                        <div style="flex:1;">
+                            <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
+                                <span class="trip-flag" th:data-dest="${route.destination}"></span>
+                                <span class="trip-dest" th:text="${route.destination}"></span>
+                                <span th:if="${collaboratingIds.contains(route.id) or hasCollaboratorIds.contains(route.id)}"
+                                    style="font-size:11px;font-weight:700;color:#9747FF;background:#F5EFFF;padding:3px 8px;border-radius:10px;">👥 협업중</span>
+                                <span style="font-size:12px;font-weight:700;padding:4px 10px;border-radius:20px;background:#F5F6F8;color:#B0B8C1;">완료</span>
+                            </div>
+                            <div class="trip-name" th:text="${route.name}"></div>
+                            <div class="trip-date">
+                                📅 <span th:text="${route.startDate}"></span>
+                                <span th:if="${route.endDate != null}"> ~ </span>
+                                <span th:text="${route.endDate}"></span>
+                            </div>
+                        </div>
+                        <div style="display:flex;align-items:center;flex-shrink:0;">
+                            <div class="trip-pin-count">
+                                <div class="pin-count-num" th:text="${#lists.size(route.pins)}"></div>
+                                <div class="pin-count-label">핀</div>
+                            </div>
+                            <button th:unless="${collaboratingIds.contains(route.id)}"
+                                    class="trip-delete-btn"
+                                    th:onclick="'event.preventDefault(); deleteTrip(' + ${route.id} + ')'">✕</button>
+                        </div>
+                    </div>
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function getCountryCode(dest) {
+            const codes = {
+                '대한민국': 'kr', '한국': 'kr', '일본': 'jp', '중국': 'cn', '미국': 'us',
+                '프랑스': 'fr', '영국': 'gb', '독일': 'de', '이탈리아': 'it', '스페인': 'es',
+                '태국': 'th', '베트남': 'vn', '싱가포르': 'sg', '호주': 'au', '캐나다': 'ca',
+                '멕시코': 'mx', '브라질': 'br', '인도': 'in', '인도네시아': 'id', '말레이시아': 'my',
+                '필리핀': 'ph', '홍콩': 'hk', '대만': 'tw', '터키': 'tr', '그리스': 'gr',
+                '포르투갈': 'pt', '네덜란드': 'nl', '스위스': 'ch', '오스트리아': 'at',
+                '체코': 'cz', '헝가리': 'hu', '폴란드': 'pl', '러시아': 'ru', '이집트': 'eg',
+                '모로코': 'ma', '아랍에미리트': 'ae', '뉴질랜드': 'nz', '캄보디아': 'kh',
+                '미얀마': 'mm', '네팔': 'np', '몽골': 'mn', '크로아티아': 'hr',
+                '덴마크': 'dk', '스웨덴': 'se', '노르웨이': 'no', '핀란드': 'fi',
+                '벨기에': 'be', '아르헨티나': 'ar', '칠레': 'cl',
+                'South Korea': 'kr', 'Korea': 'kr', 'Japan': 'jp', 'China': 'cn',
+                'USA': 'us', 'United States': 'us', 'France': 'fr', 'UK': 'gb',
+                'United Kingdom': 'gb', 'Germany': 'de', 'Italy': 'it', 'Spain': 'es',
+                'Thailand': 'th', 'Vietnam': 'vn', 'Singapore': 'sg', 'Australia': 'au',
+                'Canada': 'ca', 'India': 'in', 'Indonesia': 'id', 'Malaysia': 'my',
+                'Philippines': 'ph', 'Hong Kong': 'hk', 'Taiwan': 'tw', 'Turkey': 'tr',
+                'Greece': 'gr', 'Portugal': 'pt', 'Netherlands': 'nl', 'Switzerland': 'ch',
+                'Austria': 'at', 'New Zealand': 'nz', 'Cambodia': 'kh', 'Nepal': 'np',
+                'Mongolia': 'mn', 'Croatia': 'hr', 'Denmark': 'dk', 'Sweden': 'se',
+                'Norway': 'no', 'Finland': 'fi', 'Belgium': 'be', 'Argentina': 'ar',
+                'Brazil': 'br', 'Mexico': 'mx',
+            };
+
+            // 쉼표로 분리해서 각 부분에서 코드 찾기
+            const parts = dest.split(',').map(p => p.trim());
+            for (const part of parts) {
+                if (codes[part]) return codes[part];
+            }
+            return null;
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            document.querySelectorAll('.trip-flag').forEach(el => {
+                const dest = el.dataset.dest || '';
+                const code = getCountryCode(dest);
+                if (code) {
+                    el.innerHTML = `<img src="https://flagcdn.com/w80/${code}.png"
+                        style="width:36px;height:24px;object-fit:cover;border-radius:3px;box-shadow:0 1px 4px rgba(0,0,0,0.15);">`;
+                }
+            });
+        });
+
+        function deleteTrip(routeId) {
+            if (!confirm('여행을 삭제할까요? 모든 핀이 삭제돼요.')) return;
+            fetch(`/api/trips/${routeId}`, { method: 'DELETE' })
+                .then(r => { if (r.ok) location.reload(); });
+        }
+
+        function applyTheme(theme) {
+            document.documentElement.setAttribute('data-theme', theme);
+            document.getElementById('themeToggleBtn').textContent = theme === 'dark' ? '☀️' : '🌙';
+        }
+
+        function toggleTheme() {
+            const current = document.documentElement.getAttribute('data-theme');
+            const next = current === 'dark' ? 'light' : 'dark';
+            localStorage.setItem('theme', next);
+            applyTheme(next);
+        }
+
+        (function initTheme() {
+            const saved = localStorage.getItem('theme') || 'light';
+            applyTheme(saved);
+        })();
+
+        function loadNotifications() {
+            fetch('/api/notifications/unread-count')
+                .then(r => r.json())
+                .then(data => {
+                    const badge = document.getElementById('notiCount');
+                    if (data.count > 0) {
+                        badge.textContent = data.count > 9 ? '9+' : data.count;
+                        badge.style.display = 'flex';
+                    } else {
+                        badge.style.display = 'none';
+                    }
+                });
+        }
+
+        function toggleNotifications() {
+            const dropdown = document.getElementById('notiDropdown');
+            if (dropdown.style.display === 'none') {
+                dropdown.style.display = 'block';
+                fetch('/api/notifications')
+                    .then(r => r.json())
+                    .then(notifications => {
+                        if (notifications.length === 0) {
+                            document.getElementById('notiList').innerHTML =
+                                '<div style="text-align:center;color:#B0B8C1;padding:24px;font-size:13px;">알림이 없어요</div>';
+                            return;
+                        }
+                        document.getElementById('notiList').innerHTML = notifications.map(n => `
+                            <a href="${n.link}" onclick="markAllRead()" style="text-decoration:none;">
+                                <div style="padding:14px 20px;border-bottom:1px solid #F2F4F6;background:${n.isRead ? 'white' : '#F8FAFF'};">
+                                    <div style="font-size:13px;color:#191F28;margin-bottom:4px;">${n.message}</div>
+                                    <div style="font-size:11px;color:#B0B8C1;">${new Date(n.createdAt).toLocaleDateString('ko-KR')}</div>
+                                </div>
+                            </a>
+                        `).join('');
+                    });
+            } else {
+                dropdown.style.display = 'none';
+            }
+        }
+
+        let doneTripsVisible = true;
+
+        function toggleDoneTrips() {
+            const container = document.getElementById('doneTripsContainer');
+            const btn = document.getElementById('doneToggleBtn');
+            doneTripsVisible = !doneTripsVisible;
+            container.style.display = doneTripsVisible ? 'block' : 'none';
+            btn.textContent = doneTripsVisible ? '접기 ▲' : '펼치기 ▼';
+        }
+
+        function markAllRead() {
+            fetch('/api/notifications/read-all', { method: 'PUT' })
+                .then(() => {
+                    document.getElementById('notiCount').style.display = 'none';
+                    document.getElementById('notiDropdown').style.display = 'none';
+                });
+        }
+
+        // 드롭다운 외부 클릭 시 닫기
+        document.addEventListener('click', (e) => {
+            const dropdown = document.getElementById('notiDropdown');
+            const btn = document.getElementById('notiBtn');
+            if (dropdown && !dropdown.contains(e.target) && e.target !== btn) {
+                dropdown.style.display = 'none';
+            }
+        });
+
+        // 페이지 로드 시 알림 개수 확인
+        document.addEventListener('DOMContentLoaded', loadNotifications);
+
+    </script>
+<script src="/js/notifications.js"></script>
+</body>
+</html>

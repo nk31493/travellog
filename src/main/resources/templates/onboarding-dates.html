@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>언제 떠나시나요? - 트래블로그</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --bg-main: #F5F6F8;
+            --bg-card: #ffffff;
+            --bg-subtle: #F0F4FF;
+            --text-primary: #191F28;
+            --text-secondary: #6B7684;
+            --text-muted: #B0B8C1;
+            --border-color: #E5E8EB;
+            --accent: #1B6DFF;
+            --accent-hover: #1557D4;
+        }
+
+        [data-theme="dark"] {
+            --bg-main: #15171C;
+            --bg-card: #1E2128;
+            --bg-subtle: #1A2740;
+            --text-primary: #F0F2F5;
+            --text-secondary: #9BA3AF;
+            --text-muted: #6B7280;
+            --border-color: #2D3139;
+            --accent: #4D8DFF;
+            --accent-hover: #3D7AEF;
+        }
+
+        * { box-sizing: border-box; }
+        body { background: var(--bg-main); font-family: 'Noto Sans KR', sans-serif; margin: 0; }
+        .nav-bar {
+            background: var(--bg-card);
+            padding: 16px 24px;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .brand { font-size: 20px; font-weight: 700; color: var(--accent); text-decoration: none; }
+        .progress-wrap { display: flex; gap: 4px; padding: 20px 24px 0; max-width: 480px; margin: 0 auto; }
+        .progress-step { flex: 1; height: 4px; background: var(--border-color); border-radius: 2px; }
+        .progress-step.active { background: var(--accent); }
+        .container-main { max-width: 480px; margin: 0 auto; padding: 32px 24px; }
+        .title { font-size: 26px; font-weight: 700; color: var(--text-primary); margin-bottom: 8px; }
+        .subtitle { font-size: 14px; color: var(--text-secondary); margin-bottom: 28px; }
+        .date-card {
+            background: var(--bg-card);
+            border-radius: 16px;
+            padding: 20px 24px;
+            margin-bottom: 12px;
+        }
+        .date-label { font-size: 12px; font-weight: 600; color: var(--text-secondary); margin-bottom: 8px; }
+        .date-input {
+            width: 100%;
+            border: none;
+            border-bottom: 2px solid var(--border-color);
+            font-size: 20px;
+            font-weight: 600;
+            color: var(--text-primary);
+            padding: 8px 0;
+            background: transparent;
+        }
+        .date-input:focus { outline: none; border-color: var(--accent); }
+        .duration-badge {
+            background: var(--bg-subtle);
+            color: var(--accent);
+            padding: 14px 18px;
+            border-radius: 12px;
+            font-weight: 700;
+            font-size: 15px;
+            margin-bottom: 24px;
+            display: none;
+            text-align: center;
+        }
+        .next-btn {
+            background: var(--accent);
+            color: white;
+            border: none;
+            padding: 16px;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 700;
+            width: 100%;
+            cursor: pointer;
+        }
+        .next-btn:disabled { background: var(--border-color); color: var(--text-muted); cursor: not-allowed; }
+        .back-btn {
+            background: none;
+            border: none;
+            color: var(--text-secondary);
+            font-size: 14px;
+            cursor: pointer;
+            margin-bottom: 16px;
+            padding: 0;
+        }
+    </style>
+</head>
+<body>
+    <nav class="nav-bar">
+        <a class="brand" href="/trips">✈️ 트래블로그</a>
+        <a href="/trips" style="color:#6B7684;text-decoration:none;font-size:13px;">취소</a>
+    </nav>
+
+    <div class="progress-wrap">
+        <div class="progress-step active"></div>
+        <div class="progress-step active"></div>
+        <div class="progress-step"></div>
+    </div>
+
+    <div class="container-main">
+        <button class="back-btn" onclick="location.href='/onboarding/destination'">← 이전</button>
+        <div class="title">언제 떠나시나요? 📅</div>
+        <div class="subtitle" id="destLabel">여행 일정을 선택해주세요</div>
+
+        <div class="date-card">
+            <div class="date-label">✈️ 출발일</div>
+            <input type="date" id="startDate" class="date-input">
+        </div>
+
+        <div class="date-card">
+            <div class="date-label">🏠 귀국일</div>
+            <input type="date" id="endDate" class="date-input">
+        </div>
+
+        <div id="durationBadge" class="duration-badge"></div>
+
+        <button class="next-btn" id="nextBtn" disabled onclick="goNext()">다음</button>
+    </div>
+
+    <script>
+        const destination = sessionStorage.getItem('destination');
+        if (!destination) location.href = '/onboarding/destination';
+        document.getElementById('destLabel').textContent = `📍 ${destination} 여행 일정을 선택해주세요`;
+
+        function checkDates() {
+            const start = document.getElementById('startDate').value;
+            const end = document.getElementById('endDate').value;
+            if (start && end && end >= start) {
+                const days = Math.ceil((new Date(end) - new Date(start)) / (1000*60*60*24)) + 1;
+                const badge = document.getElementById('durationBadge');
+                badge.style.display = 'block';
+                badge.textContent = `🗓️ ${days - 1}박 ${days}일`;
+                document.getElementById('nextBtn').disabled = false;
+            } else {
+                document.getElementById('durationBadge').style.display = 'none';
+                document.getElementById('nextBtn').disabled = true;
+            }
+        }
+
+        document.getElementById('startDate').addEventListener('change', checkDates);
+        document.getElementById('endDate').addEventListener('change', checkDates);
+
+        function goNext() {
+            sessionStorage.setItem('startDate', document.getElementById('startDate').value);
+            sessionStorage.setItem('endDate', document.getElementById('endDate').value);
+            location.href = '/onboarding/name';
+        }
+
+        (function() {
+            const saved = localStorage.getItem('theme') || 'light';
+            document.documentElement.setAttribute('data-theme', saved);
+        })();
+        </script>
+</body>
+</html>

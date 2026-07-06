@@ -1,0 +1,463 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>마이페이지 - 트래블로그</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --bg-main: #F5F6F8;
+            --bg-card: #ffffff;
+            --text-primary: #191F28;
+            --text-secondary: #6B7684;
+            --text-label: #4E5968;
+            --border-color: #E5E8EB;
+            --accent: #1B6DFF;
+            --accent-hover: #1557D4;
+            --danger: #FF6B6B;
+        }
+
+        [data-theme="dark"] {
+            --bg-main: #15171C;
+            --bg-card: #1E2128;
+            --text-primary: #F0F2F5;
+            --text-secondary: #9BA3AF;
+            --text-label: #C0C5CC;
+            --border-color: #2D3139;
+            --accent: #4D8DFF;
+            --accent-hover: #3D7AEF;
+            --danger: #FF6B6B;
+        }
+
+        * { box-sizing: border-box; }
+        body { background: var(--bg-main); font-family: 'Noto Sans KR', sans-serif; margin: 0; }
+        .nav-bar {
+            background: var(--bg-card);
+            padding: 14px 24px;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .brand { font-size: 18px; font-weight: 700; color: var(--accent); text-decoration: none; }
+        .nav-link { color: var(--text-secondary); text-decoration: none; font-size: 13px; }
+        .container-main { max-width: 480px; margin: 0 auto; padding: 32px 20px; }
+        .profile-card {
+            background: linear-gradient(135deg, #1B6DFF 0%, #6FA8FF 100%);
+            border-radius: 20px;
+            padding: 32px 24px;
+            text-align: center;
+            color: white;
+            margin-bottom: 20px;
+        }
+        .avatar {
+            width: 72px;
+            height: 72px;
+            background: rgba(255,255,255,0.25);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 32px;
+            margin: 0 auto 16px;
+        }
+        .profile-name { font-size: 22px; font-weight: 700; margin-bottom: 4px; }
+        .profile-email { font-size: 13px; opacity: 0.85; }
+        .section-card {
+            background: var(--bg-card);
+            border-radius: 16px;
+            padding: 24px;
+            margin-bottom: 16px;
+        }
+        .section-title { font-size: 15px; font-weight: 700; color: var(--text-primary); margin-bottom: 16px; }
+        .field-label { font-size: 13px; font-weight: 600; color: var(--text-label); margin-bottom: 6px; }
+        .field-input {
+            width: 100%;
+            border: 1.5px solid var(--border-color);
+            border-radius: 10px;
+            padding: 12px 16px;
+            font-size: 14px;
+            margin-bottom: 12px;
+            background: var(--bg-card);
+            color: var(--text-primary);
+        }
+        .field-input:focus { outline: none; border-color: var(--accent); }
+        .save-btn {
+            background: var(--accent);
+            color: white;
+            border: none;
+            padding: 12px;
+            border-radius: 10px;
+            font-size: 14px;
+            font-weight: 700;
+            width: 100%;
+            cursor: pointer;
+        }
+        .save-btn:hover { background: var(--accent-hover); }
+        .save-msg { font-size: 12px; color: var(--accent); margin-top: 8px; display: none; text-align: center; }
+        .error-msg { font-size: 12px; color: var(--danger); margin-top: 8px; display: none; text-align: center; }
+        .logout-btn {
+            background: none;
+            border: 1.5px solid var(--border-color);
+            color: var(--text-secondary);
+            padding: 12px;
+            border-radius: 10px;
+            font-size: 14px;
+            width: 100%;
+            cursor: pointer;
+            text-align: center;
+            text-decoration: none;
+            display: block;
+        }
+        .logout-btn:hover { background: var(--bg-main); color: var(--text-secondary); }
+    </style>
+</head>
+<body>
+    <nav class="nav-bar">
+        <a class="brand" href="/trips">✈️ 트래블로그</a>
+        <div style="display:flex;align-items:center;gap:12px;">
+
+            <!-- 알림 버튼 -->
+            <div style="position:relative;">
+                <button onclick="toggleNotifications()" id="notiBtn"
+                        style="background:none;border:none;font-size:20px;cursor:pointer;position:relative;">
+                    🔔
+                </button>
+                <span id="notiCount"
+                    style="display:none;position:absolute;top:-4px;right:-4px;background:#FF6B6B;color:white;font-size:10px;font-weight:700;width:16px;height:16px;border-radius:50%;display:flex;align-items:center;justify-content:center;">
+                    0
+                </span>
+            </div>
+
+            <!-- 알림 드롭다운 -->
+            <div id="notiDropdown" style="display:none;position:absolute;top:56px;right:20px;width:320px;background:var(--bg-card);border-radius:16px;box-shadow:0 8px 32px rgba(0,0,0,0.12);z-index:200;overflow:hidden;">
+                <div style="padding:16px 20px;border-bottom:1px solid var(--border-light);display:flex;justify-content:space-between;align-items:center;">
+                    <span style="font-size:15px;font-weight:700;color:var(--text-primary);">알림</span>
+                    <button onclick="markAllRead()" style="background:none;border:none;font-size:12px;color:var(--accent);cursor:pointer;">모두 읽음</button>
+                </div>
+                <div id="notiList" style="max-height:360px;overflow-y:auto;"></div>
+            </div>
+
+            <button onclick="toggleTheme()" id="themeToggleBtn"
+                    style="background:none;border:1px solid #E5E8EB;border-radius:20px;padding:4px 12px;font-size:13px;cursor:pointer;color:#6B7684;">
+                🌙
+            </button>
+            <a href="/trips" class="nav-link">← 내 여행</a>
+        </div>
+    </nav>
+
+    <div class="container-main">
+
+        <!-- 프로필 카드 -->
+        <div class="profile-card">
+            <div class="avatar">👤</div>
+            <div class="profile-name" th:text="${user.nickname}"></div>
+            <div class="profile-email" th:text="${user.email}"></div>
+        </div>
+
+        <!-- 닉네임 변경 -->
+        <div class="section-card">
+            <div class="section-title">닉네임 변경</div>
+            <div class="field-label">새 닉네임</div>
+            <input type="text" id="nicknameInput" class="field-input"
+                   th:value="${user.nickname}" placeholder="닉네임 입력">
+            <button class="save-btn" onclick="updateNickname()">변경하기</button>
+            <div id="nicknameMsg" class="save-msg">닉네임이 변경됐어요 ✓</div>
+            <div id="nicknameErr" class="error-msg"></div>
+        </div>
+
+        <!-- 비밀번호 변경 -->
+        <div class="section-card">
+            <div class="section-title">비밀번호 변경</div>
+            <div class="field-label">현재 비밀번호</div>
+            <input type="password" id="currentPw" class="field-input" placeholder="현재 비밀번호">
+            <div class="field-label">새 비밀번호</div>
+            <input type="password" id="newPw" class="field-input"
+                   placeholder="새 비밀번호" oninput="checkNewPw()">
+            <div style="margin-top:-8px;margin-bottom:12px;">
+                <div id="pwCheck1" style="font-size:12px;color:#B0B8C1;">✗ 8자 이상</div>
+                <div id="pwCheck2" style="font-size:12px;color:#B0B8C1;">✗ 영문 포함</div>
+                <div id="pwCheck3" style="font-size:12px;color:#B0B8C1;">✗ 숫자 포함</div>
+                <div id="pwCheck4" style="font-size:12px;color:#B0B8C1;">✗ 특수문자 포함 (!@#$%^&*)</div>
+            </div>
+            <div class="field-label">새 비밀번호 확인</div>
+            <input type="password" id="confirmPw" class="field-input" placeholder="새 비밀번호 확인">
+            <button class="save-btn" onclick="updatePassword()">변경하기</button>
+            <div id="passwordMsg" class="save-msg">비밀번호가 변경됐어요 ✓</div>
+            <div id="passwordErr" class="error-msg"></div>
+        </div>
+
+        <!-- 통계 카드 -->
+        <div class="section-card" style="margin-bottom:16px;">
+            <div class="section-title">✈️ 나의 여행 기록</div>
+            <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:16px;">
+                <div style="background:#F5F6F8;border-radius:12px;padding:20px;text-align:center;">
+                    <div style="font-size:28px;font-weight:700;color:#1B6DFF;" id="totalTrips">-</div>
+                    <div style="font-size:13px;color:#6B7684;margin-top:4px;">번의 여행</div>
+                </div>
+                <div style="background:#F5F6F8;border-radius:12px;padding:20px;text-align:center;">
+                    <div style="font-size:28px;font-weight:700;color:#1B6DFF;" id="totalCountries">-</div>
+                    <div style="font-size:13px;color:#6B7684;margin-top:4px;">개 국가</div>
+                </div>
+                <div style="background:#F5F6F8;border-radius:12px;padding:20px;text-align:center;">
+                    <div style="font-size:28px;font-weight:700;color:#1B6DFF;" id="totalPins">-</div>
+                    <div style="font-size:13px;color:#6B7684;margin-top:4px;">개의 장소</div>
+                </div>
+            </div>
+
+            <div>
+                <div style="font-size:13px;font-weight:600;color:#4E5968;margin-bottom:10px;">🌏 방문한 국가</div>
+                <div id="countryList" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(80px,1fr));gap:10px;">
+                    <div style="font-size:13px;color:#B0B8C1;">불러오는 중...</div>
+                </div>
+            </div>
+
+            <div style="margin-top:16px;">
+                <div style="font-size:13px;font-weight:600;color:#4E5968;margin-bottom:10px;">🏙️ 방문한 도시</div>
+                <div id="cityList" style="display:flex;flex-wrap:wrap;gap:8px;">
+                    <div style="font-size:13px;color:#B0B8C1;">불러오는 중...</div>
+                </div>
+            </div>
+        </div>
+
+        
+        <!-- 여행별 경비 차트 -->
+        <div class="section-card" style="margin-bottom:16px;">
+            <div class="section-title">💰 여행별 총 경비</div>
+            <canvas id="expenseChart" height="120"></canvas>
+        </div>
+        
+        <!-- 국가별 방문 횟수 차트 -->
+        <div class="section-card" style="margin-bottom:16px;">
+            <div class="section-title">🌏 국가별 방문 횟수</div>
+            <canvas id="countryChart" height="120"></canvas>
+        </div>
+        
+        <!-- 로그아웃 -->
+        <div class="section-card">
+        <a href="/logout" class="logout-btn">로그아웃</a>
+        </div>
+
+</div>  <!-- container-main 닫힘 -->
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    function applyTheme(theme) {
+        document.documentElement.setAttribute('data-theme', theme);
+        document.getElementById('themeToggleBtn').textContent = theme === 'dark' ? '☀️' : '🌙';
+    }
+    function toggleTheme() {
+        const current = document.documentElement.getAttribute('data-theme');
+        const next = current === 'dark' ? 'light' : 'dark';
+        localStorage.setItem('theme', next);
+        applyTheme(next);
+    }
+    (function initTheme() {
+        const saved = localStorage.getItem('theme') || 'light';
+        applyTheme(saved);
+    })();
+
+    function getCountryCode(countryName) {
+        const codes = {
+            '대한민국': 'kr', '한국': 'kr', '일본': 'jp', '중국': 'cn', '미국': 'us',
+            '프랑스': 'fr', '영국': 'gb', '독일': 'de', '이탈리아': 'it', '스페인': 'es',
+            '태국': 'th', '베트남': 'vn', '싱가포르': 'sg', '호주': 'au', '캐나다': 'ca',
+            '멕시코': 'mx', '브라질': 'br', '인도': 'in', '인도네시아': 'id', '말레이시아': 'my',
+            '필리핀': 'ph', '홍콩': 'hk', '대만': 'tw', '터키': 'tr', '그리스': 'gr',
+            '포르투갈': 'pt', '네덜란드': 'nl', '스위스': 'ch', '오스트리아': 'at',
+            '체코': 'cz', '헝가리': 'hu', '폴란드': 'pl', '러시아': 'ru', '이집트': 'eg',
+            '모로코': 'ma', '아랍에미리트': 'ae', '뉴질랜드': 'nz', '캄보디아': 'kh',
+            '미얀마': 'mm', '네팔': 'np', '몽골': 'mn', '크로아티아': 'hr',
+            '덴마크': 'dk', '스웨덴': 'se', '노르웨이': 'no', '핀란드': 'fi',
+            '벨기에': 'be', '아르헨티나': 'ar', '칠레': 'cl',
+            'South Korea': 'kr', 'Korea': 'kr', 'Japan': 'jp', 'China': 'cn',
+            'USA': 'us', 'United States': 'us', 'France': 'fr', 'UK': 'gb',
+            'United Kingdom': 'gb', 'Germany': 'de', 'Italy': 'it', 'Spain': 'es',
+            'Thailand': 'th', 'Vietnam': 'vn', 'Singapore': 'sg', 'Australia': 'au',
+            'Canada': 'ca', 'India': 'in', 'Indonesia': 'id', 'Malaysia': 'my',
+            'Philippines': 'ph', 'Hong Kong': 'hk', 'Taiwan': 'tw', 'Turkey': 'tr',
+            'Greece': 'gr', 'Portugal': 'pt', 'Netherlands': 'nl', 'Switzerland': 'ch',
+            'Austria': 'at', 'New Zealand': 'nz', 'Cambodia': 'kh', 'Nepal': 'np',
+            'Mongolia': 'mn', 'Croatia': 'hr', 'Denmark': 'dk', 'Sweden': 'se',
+            'Norway': 'no', 'Finland': 'fi', 'Belgium': 'be', 'Argentina': 'ar',
+            'Brazil': 'br', 'Mexico': 'mx',
+        };
+        return codes[countryName] || null;
+    }
+
+    function updateNickname() {
+        const nickname = document.getElementById('nicknameInput').value.trim();
+        if (!nickname) { alert('닉네임을 입력해주세요!'); return; }
+        fetch('/api/mypage/nickname', {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ nickname })
+        }).then(r => {
+            if (r.ok) {
+                document.getElementById('nicknameMsg').style.display = 'block';
+                setTimeout(() => document.getElementById('nicknameMsg').style.display = 'none', 2000);
+            }
+        });
+    }
+
+    function checkNewPw() {
+        const val = document.getElementById('newPw').value;
+        checkPw('pwCheck1', val.length >= 8, '8자 이상');
+        checkPw('pwCheck2', /[a-zA-Z]/.test(val), '영문 포함');
+        checkPw('pwCheck3', /[0-9]/.test(val), '숫자 포함');
+        checkPw('pwCheck4', /[!@#$%^&*]/.test(val), '특수문자 포함 (!@#$%^&*)');
+    }
+
+    function checkPw(id, passed, label) {
+        const el = document.getElementById(id);
+        el.style.color = passed ? '#1B6DFF' : '#B0B8C1';
+        el.textContent = (passed ? '✓ ' : '✗ ') + label;
+    }
+
+    function updatePassword() {
+        const currentPassword = document.getElementById('currentPw').value;
+        const newPassword = document.getElementById('newPw').value;
+        const confirmPassword = document.getElementById('confirmPw').value;
+        const errEl = document.getElementById('passwordErr');
+
+        if (!currentPassword || !newPassword || !confirmPassword) {
+            errEl.textContent = '모든 항목을 입력해주세요!';
+            errEl.style.display = 'block'; return;
+        }
+        if (!/^(?=.*[a-zA-Z])(?=.*[0-9])(?=.*[!@#$%^&*]).{8,}$/.test(newPassword)) {
+            errEl.textContent = '비밀번호 조건을 모두 충족해주세요!';
+            errEl.style.display = 'block'; return;
+        }
+        if (newPassword !== confirmPassword) {
+            errEl.textContent = '새 비밀번호가 일치하지 않아요!';
+            errEl.style.display = 'block'; return;
+        }
+
+        fetch('/api/mypage/password', {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ currentPassword, newPassword })
+        }).then(r => {
+            if (r.ok) {
+                errEl.style.display = 'none';
+                document.getElementById('passwordMsg').style.display = 'block';
+                document.getElementById('currentPw').value = '';
+                document.getElementById('newPw').value = '';
+                document.getElementById('confirmPw').value = '';
+                checkNewPw();
+                setTimeout(() => document.getElementById('passwordMsg').style.display = 'none', 2000);
+            } else {
+                r.text().then(msg => {
+                    errEl.textContent = msg;
+                    errEl.style.display = 'block';
+                });
+            }
+        });
+    }
+
+    fetch('/api/mypage/stats')
+        .then(r => r.json())
+        .then(data => {
+            document.getElementById('totalTrips').textContent = data.totalTrips;
+            document.getElementById('totalPins').textContent = data.totalPins;
+            document.getElementById('totalCountries').textContent = data.countries.length;
+
+            document.getElementById('countryList').innerHTML = data.countries.length > 0
+                ? data.countries.map(c => {
+                    const code = getCountryCode(c);
+                    const flag = code
+                        ? `<img src="https://flagcdn.com/w80/${code}.png" style="width:48px;height:32px;object-fit:cover;border-radius:4px;margin-bottom:6px;">`
+                        : `<div style="font-size:32px;margin-bottom:6px;">🌏</div>`;
+                    return `
+                        <div style="text-align:center;padding:12px 16px;background:#F0F4FF;border-radius:12px;">
+                            ${flag}
+                            <div style="font-size:12px;font-weight:600;color:#1B6DFF;">${c}</div>
+                        </div>`;
+                }).join('')
+                : '<div style="font-size:13px;color:#B0B8C1;">아직 방문한 국가가 없어요</div>';
+
+            // 방문한 도시 - 나라별로 묶어서 표시
+            if (data.countryCityMap && Object.keys(data.countryCityMap).length > 0) {
+                document.getElementById('cityList').innerHTML = Object.entries(data.countryCityMap).map(([country, cities]) => {
+                    const code = getCountryCode(country);
+                    const flag = code
+                        ? `<img src="https://flagcdn.com/w80/${code}.png" style="width:20px;height:14px;object-fit:cover;border-radius:2px;margin-right:4px;vertical-align:middle;">`
+                        : '🌏';
+                    return `
+                        <div style="width:100%;margin-bottom:10px;">
+                            <div style="font-size:12px;font-weight:700;color:var(--text-secondary);margin-bottom:6px;">
+                                ${flag} ${country}
+                            </div>
+                            <div style="display:flex;flex-wrap:wrap;gap:6px;">
+                                ${[...cities].map(c => `
+                                    <span style="background:var(--bg-subtle);color:var(--accent);padding:4px 12px;border-radius:20px;font-size:13px;">
+                                        ${c}
+                                    </span>`).join('')}
+                            </div>
+                        </div>`;
+                }).join('');
+            } else {
+                document.getElementById('cityList').innerHTML =
+                    '<div style="font-size:13px;color:#B0B8C1;">아직 방문한 도시가 없어요</div>';
+            }
+
+            // 월별 여행 차트
+            const labels = Object.keys(data.monthlyTrips);
+            const values = Object.values(data.monthlyTrips);
+            new Chart(document.getElementById('monthlyChart'), {
+                type: 'bar',
+                data: {
+                    labels,
+                    datasets: [{ label: '여행 횟수', data: values, backgroundColor: 'rgba(27,109,255,0.7)', borderRadius: 6 }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: { legend: { display: false } },
+                    scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } }
+                }
+            });
+
+            // 여행별 경비 차트
+            if (data.tripExpenses && data.tripExpenses.length > 0) {
+                new Chart(document.getElementById('expenseChart'), {
+                    type: 'bar',
+                    data: {
+                        labels: data.tripExpenses.map(t => t.name),
+                        datasets: [{ label: '총 경비 (원)', data: data.tripExpenses.map(t => t.total), backgroundColor: 'rgba(255,107,107,0.7)', borderRadius: 6 }]
+                    },
+                    options: {
+                        responsive: true,
+                        plugins: { legend: { display: false } },
+                        scales: { y: { beginAtZero: true, ticks: { callback: val => val.toLocaleString() + '원' } } }
+                    }
+                });
+            } else {
+                document.getElementById('expenseChart').parentElement.innerHTML +=
+                    '<div style="text-align:center;color:#B0B8C1;font-size:13px;padding:12px;">아직 경비 기록이 없어요</div>';
+            }
+
+            // 국가별 방문 횟수 차트
+            if (data.countryCount && Object.keys(data.countryCount).length > 0) {
+                const countryLabels = Object.keys(data.countryCount);
+                const countryValues = Object.values(data.countryCount);
+                const colors = ['rgba(27,109,255,0.7)', 'rgba(255,107,107,0.7)', 'rgba(52,211,153,0.7)', 'rgba(251,191,36,0.7)', 'rgba(167,139,250,0.7)', 'rgba(251,146,60,0.7)'];
+                new Chart(document.getElementById('countryChart'), {
+                    type: 'doughnut',
+                    data: {
+                        labels: countryLabels,
+                        datasets: [{ data: countryValues, backgroundColor: colors.slice(0, countryLabels.length), borderWidth: 2 }]
+                    },
+                    options: {
+                        responsive: true,
+                        plugins: { legend: { position: 'right', labels: { font: { size: 12 } } } }
+                    }
+                });
+            } else {
+                document.getElementById('countryChart').parentElement.innerHTML +=
+                    '<div style="text-align:center;color:#B0B8C1;font-size:13px;padding:12px;">아직 방문한 국가가 없어요</div>';
+            }
+        });
+</script>
+<script src="/js/notifications.js"></script>
+</body>
+</html>

@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>어디로 떠나시나요? - 트래블로그</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --bg-main: #F5F6F8;
+            --bg-card: #ffffff;
+            --bg-subtle: #F0F4FF;
+            --bg-hover: #F5F6F8;
+            --text-primary: #191F28;
+            --text-secondary: #6B7684;
+            --text-muted: #B0B8C1;
+            --border-color: #E5E8EB;
+            --border-light: #F2F4F6;
+            --accent: #1B6DFF;
+            --accent-hover: #1557D4;
+        }
+
+        [data-theme="dark"] {
+            --bg-main: #15171C;
+            --bg-card: #1E2128;
+            --bg-subtle: #1A2740;
+            --bg-hover: #262A33;
+            --text-primary: #F0F2F5;
+            --text-secondary: #9BA3AF;
+            --text-muted: #6B7280;
+            --border-color: #2D3139;
+            --border-light: #262A33;
+            --accent: #4D8DFF;
+            --accent-hover: #3D7AEF;
+        }
+
+        * { box-sizing: border-box; }
+        body { background: var(--bg-main); font-family: 'Noto Sans KR', sans-serif; margin: 0; }
+        .nav-bar {
+            background: var(--bg-card);
+            padding: 16px 24px;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .brand { font-size: 20px; font-weight: 700; color: var(--accent); text-decoration: none; }
+        .progress-wrap { display: flex; gap: 4px; padding: 20px 24px 0; max-width: 480px; margin: 0 auto; }
+        .progress-step { flex: 1; height: 4px; background: var(--border-color); border-radius: 2px; }
+        .progress-step.active { background: var(--accent); }
+        .container-main { max-width: 480px; margin: 0 auto; padding: 32px 24px; }
+        .title { font-size: 26px; font-weight: 700; color: var(--text-primary); margin-bottom: 8px; }
+        .subtitle { font-size: 14px; color: var(--text-secondary); margin-bottom: 28px; }
+        .search-box {
+            width: 100%;
+            border: 2px solid var(--border-color);
+            border-radius: 12px;
+            padding: 14px 18px;
+            font-size: 15px;
+            background: var(--bg-card);
+            color: var(--text-primary);
+            margin-bottom: 16px;
+        }
+        .search-box:focus { outline: none; border-color: var(--accent); }
+        .selected-badge {
+            background: var(--bg-subtle);
+            color: var(--accent);
+            padding: 12px 18px;
+            border-radius: 12px;
+            margin-bottom: 16px;
+            font-weight: 600;
+            font-size: 14px;
+            display: none;
+        }
+        .suggestions { background: var(--bg-card); border-radius: 16px; margin-bottom: 24px; overflow: hidden; }
+        .suggestion-item {
+            padding: 16px 18px;
+            border-bottom: 1px solid var(--border-light);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            transition: background 0.15s;
+        }
+        .suggestion-item:hover { background: var(--bg-hover); }
+        .suggestion-item:last-child { border-bottom: none; }
+        .suggestion-emoji { font-size: 28px; }
+        .suggestion-name { font-size: 15px; font-weight: 600; color: var(--text-primary); }
+        .suggestion-desc { font-size: 12px; color: var(--text-secondary); }
+        .next-btn {
+            background: var(--accent);
+            color: white;
+            border: none;
+            padding: 16px;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 700;
+            width: 100%;
+            cursor: pointer;
+        }
+        .next-btn:disabled { background: var(--border-color); color: var(--text-muted); cursor: not-allowed; }
+    </style>
+</head>
+<body>
+    <nav class="nav-bar">
+        <a class="brand" href="/trips">✈️ 트래블로그</a>
+        <a href="/trips" style="color:#6B7684;text-decoration:none;font-size:13px;">취소</a>
+    </nav>
+
+    <div class="progress-wrap">
+        <div class="progress-step active"></div>
+        <div class="progress-step"></div>
+        <div class="progress-step"></div>
+    </div>
+
+    <div class="container-main">
+        <div class="title">어디로 떠나시나요? 🌏</div>
+        <div class="subtitle">여행할 도시나 나라를 선택해주세요</div>
+
+        <input type="text" id="searchInput" class="search-box" placeholder="🔍 도시 검색 (예: 도쿄)">
+        <div id="searchResults" style="background:var(--bg-card);border:1px solid var(--border-color);border-radius:10px;margin-top:4px;overflow:hidden;"></div>
+        
+        <div id="selectedBadge" class="selected-badge"></div>
+
+        <div class="suggestions" id="suggestions">
+            <div class="suggestion-item" onclick="selectDest('도쿄, 일본', '🗼')">
+                <div class="suggestion-emoji">🗼</div>
+                <div>
+                    <div class="suggestion-name">도쿄, 일본</div>
+                    <div class="suggestion-desc">인기 여행지 · 도시 여행</div>
+                </div>
+            </div>
+            <div class="suggestion-item" onclick="selectDest('오사카, 일본', '🏯')">
+                <div class="suggestion-emoji">🏯</div>
+                <div>
+                    <div class="suggestion-name">오사카, 일본</div>
+                    <div class="suggestion-desc">맛집 천국 · 가까운 여행지</div>
+                </div>
+            </div>
+            <div class="suggestion-item" onclick="selectDest('방콕, 태국', '🛕')">
+                <div class="suggestion-emoji">🛕</div>
+                <div>
+                    <div class="suggestion-name">방콕, 태국</div>
+                    <div class="suggestion-desc">동남아 인기 여행지</div>
+                </div>
+            </div>
+            <div class="suggestion-item" onclick="selectDest('파리, 프랑스', '🗼')">
+                <div class="suggestion-emoji">🗼</div>
+                <div>
+                    <div class="suggestion-name">파리, 프랑스</div>
+                    <div class="suggestion-desc">로맨틱한 유럽 여행</div>
+                </div>
+            </div>
+            <div class="suggestion-item" onclick="selectDest('뉴욕, 미국', '🗽')">
+                <div class="suggestion-emoji">🗽</div>
+                <div>
+                    <div class="suggestion-name">뉴욕, 미국</div>
+                    <div class="suggestion-desc">꿈의 도시 · 자유의 여신상</div>
+                </div>
+            </div>
+            <div class="suggestion-item" onclick="selectDest('제주도, 한국', '🏝️')">
+                <div class="suggestion-emoji">🏝️</div>
+                <div>
+                    <div class="suggestion-name">제주도, 한국</div>
+                    <div class="suggestion-desc">국내 여행 · 자연 힐링</div>
+                </div>
+            </div>
+        </div>
+
+        <button class="next-btn" id="nextBtn" disabled onclick="goNext()">다음</button>
+    </div>
+
+    <script>
+        (function() {
+            const saved = localStorage.getItem('theme') || 'light';
+            document.documentElement.setAttribute('data-theme', saved);
+        })();
+    </script>
+        <script th:inline="javascript">
+        const googleMapsKey = [[${googleMapsKey}]];
+    </script>
+    <script th:src="@{'https://maps.googleapis.com/maps/api/js?key=' + ${googleMapsKey} + '&libraries=places&loading=async&callback=initPlaces'}" async></script>
+    <script>
+        (function() {
+            const saved = localStorage.getItem('theme') || 'light';
+            document.documentElement.setAttribute('data-theme', saved);
+        })();
+
+        let selectedDest = null;
+
+        function initPlaces() {
+            const input = document.getElementById('searchInput');
+            input.addEventListener('input', async () => {
+                const query = input.value.trim();
+                if (query.length < 2) {
+                    document.getElementById('searchResults').innerHTML = '';
+                    return;
+                }
+                try {
+                    const { Place } = await google.maps.importLibrary('places');
+                    const { places } = await Place.searchByText({
+                        textQuery: query + ' 도시',
+                        language: 'ko',
+                        maxResultCount: 5,
+                        fields: ['displayName', 'formattedAddress', 'location']
+                    });
+
+                    if (places.length === 0) {
+                        document.getElementById('searchResults').innerHTML =
+                            '<div style="padding:12px;font-size:13px;color:#B0B8C1;">검색 결과가 없어요</div>';
+                        return;
+                    }
+
+                    document.getElementById('searchResults').innerHTML = places.map(p => {
+                        const address = p.formattedAddress || '';
+                        // 공백으로 분리해서 첫 번째 단어를 국가명으로
+                        const country = address.split(' ')[0].trim();
+                        const city = input.value.trim();
+                        const destName = country ? `${city}, ${country}` : city;
+                        const escaped = destName.replace(/'/g, "\\'");
+
+                        return `<div class="suggestion-item" onclick="selectDest('${escaped}', '📍')">
+                            <div class="suggestion-emoji">📍</div>
+                            <div>
+                                <div class="suggestion-name">${destName}</div>
+                                <div class="suggestion-desc">${address}</div>
+                            </div>
+                        </div>`;
+                    }).slice(0, 1).join('');
+                } catch(e) {
+                    console.error('검색 오류:', e);
+                }
+            });
+        }
+
+        function selectDest(name, emoji) {
+            selectedDest = name;
+            const badge = document.getElementById('selectedBadge');
+            badge.style.display = 'block';
+            badge.innerHTML = `${emoji} <strong>${name}</strong> 선택됨 ✓`;
+            document.getElementById('nextBtn').disabled = false;
+            document.getElementById('searchResults').innerHTML = '';
+            document.getElementById('searchInput').value = name;
+        }
+
+        function goNext() {
+            if (!selectedDest) return;
+            sessionStorage.setItem('destination', selectedDest);
+            location.href = '/onboarding/dates';
+        }
+    </script>
+
+</body>
+</html>

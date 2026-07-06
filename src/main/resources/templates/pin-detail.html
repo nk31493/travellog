@@ -1,0 +1,584 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title th:text="${pin.title} + ' - 트래블로그'"></title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --bg-main: #F5F6F8;
+            --bg-card: #ffffff;
+            --bg-subtle: #F0F4FF;
+            --text-primary: #191F28;
+            --text-secondary: #6B7684;
+            --text-muted: #B0B8C1;
+            --border-color: #E5E8EB;
+            --border-light: #F2F4F6;
+            --accent: #1B6DFF;
+            --accent-hover: #1557D4;
+            --danger: #FF6B6B;
+            --danger-bg: #FFD0D0;
+            --danger-bg-hover: #FFF5F5;
+        }
+
+        [data-theme="dark"] {
+            --bg-main: #15171C;
+            --bg-card: #1E2128;
+            --bg-subtle: #1A2740;
+            --text-primary: #F0F2F5;
+            --text-secondary: #9BA3AF;
+            --text-muted: #6B7280;
+            --border-color: #2D3139;
+            --border-light: #262A33;
+            --accent: #4D8DFF;
+            --accent-hover: #3D7AEF;
+            --danger: #FF6B6B;
+            --danger-bg: #4A2A2A;
+            --danger-bg-hover: #3A2222;
+        }
+
+        * { box-sizing: border-box; }
+        body { background: var(--bg-main); font-family: 'Noto Sans KR', sans-serif; margin: 0; }
+        .nav-bar {
+            background: var(--bg-card);
+            padding: 14px 24px;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+        .brand { font-size: 18px; font-weight: 700; color: var(--accent); text-decoration: none; }
+        .nav-right { display: flex; align-items: center; gap: 12px; }
+        .nav-link { color: var(--text-secondary); text-decoration: none; font-size: 13px; }
+        .container-main { max-width: 700px; margin: 0 auto; padding: 28px 20px; }
+        .info-card {
+            background: var(--bg-card);
+            border-radius: 16px;
+            padding: 24px;
+            margin-bottom: 16px;
+        }
+        .pin-title { font-size: 22px; font-weight: 700; color: var(--text-primary); margin-bottom: 16px; }
+        .field-label { font-size: 12px; font-weight: 600; color: var(--text-secondary); margin-bottom: 6px; }
+        .date-row { display: flex; gap: 10px; align-items: flex-end; flex-wrap: wrap; }
+        .date-input {
+            flex: 1;
+            border: 1.5px solid var(--border-color);
+            border-radius: 10px;
+            padding: 10px 14px;
+            font-size: 14px;
+            min-width: 130px;
+            background: var(--bg-card);
+            color: var(--text-primary);
+        }
+        .date-input:focus { outline: none; border-color: var(--accent); }
+        .save-btn {
+            background: var(--accent);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 10px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            white-space: nowrap;
+        }
+        .save-btn:hover { background: var(--accent-hover); }
+        .save-msg { font-size: 12px; color: var(--accent); display: none; margin-top: 8px; }
+        .coord-text { font-size: 12px; color: var(--text-muted); margin-top: 12px; }
+        .section-card {
+            background: var(--bg-card);
+            border-radius: 16px;
+            padding: 24px;
+            margin-bottom: 16px;
+        }
+        .section-title { font-size: 15px; font-weight: 700; color: var(--text-primary); margin-bottom: 16px; }
+        .memo-area {
+            width: 100%;
+            border: 1.5px solid var(--border-color);
+            border-radius: 10px;
+            padding: 12px 14px;
+            font-size: 14px;
+            resize: vertical;
+            min-height: 100px;
+            background: var(--bg-card);
+            color: var(--text-primary);
+        }
+        .memo-area:focus { outline: none; border-color: var(--accent); }
+        .photo-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 16px; }
+        .photo-wrap { position: relative; aspect-ratio: 1; }
+        .photo-wrap img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            border-radius: 10px;
+            cursor: pointer;
+        }
+        .photo-del {
+            position: absolute;
+            top: 4px;
+            right: 4px;
+            background: rgba(0,0,0,0.5);
+            color: white;
+            border: none;
+            width: 22px;
+            height: 22px;
+            border-radius: 50%;
+            font-size: 12px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .upload-area {
+            border: 2px dashed var(--border-color);
+            border-radius: 10px;
+            padding: 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: border-color 0.15s;
+        }
+        .upload-area:hover { border-color: var(--accent); }
+        .upload-label { font-size: 13px; color: var(--text-secondary); margin-top: 8px; }
+        .delete-btn {
+            background: none;
+            border: 1.5px solid var(--danger-bg);
+            color: var(--danger);
+            padding: 10px 20px;
+            border-radius: 10px;
+            font-size: 14px;
+            cursor: pointer;
+            width: 100%;
+        }
+        .delete-btn:hover { background: var(--danger-bg-hover); }
+
+    </style>
+</head>
+<body>
+    <nav class="nav-bar">
+        <a class="brand" href="/trips">✈️ 트래블로그</a>
+        <div class="nav-right">
+
+            <!-- 알림 버튼 -->
+            <div style="position:relative;">
+                <button onclick="toggleNotifications()" id="notiBtn"
+                        style="background:none;border:none;font-size:20px;cursor:pointer;position:relative;">
+                    🔔
+                </button>
+                <span id="notiCount"
+                    style="display:none;position:absolute;top:-4px;right:-4px;background:#FF6B6B;color:white;font-size:10px;font-weight:700;width:16px;height:16px;border-radius:50%;display:flex;align-items:center;justify-content:center;">
+                    0
+                </span>
+            </div>
+
+            <!-- 알림 드롭다운 -->
+            <div id="notiDropdown" style="display:none;position:absolute;top:56px;right:20px;width:320px;background:var(--bg-card);border-radius:16px;box-shadow:0 8px 32px rgba(0,0,0,0.12);z-index:200;overflow:hidden;">
+                <div style="padding:16px 20px;border-bottom:1px solid var(--border-light);display:flex;justify-content:space-between;align-items:center;">
+                    <span style="font-size:15px;font-weight:700;color:var(--text-primary);">알림</span>
+                    <button onclick="markAllRead()" style="background:none;border:none;font-size:12px;color:var(--accent);cursor:pointer;">모두 읽음</button>
+                </div>
+                <div id="notiList" style="max-height:360px;overflow-y:auto;"></div>
+            </div>
+            <a th:if="${pin.travelRoute != null}"
+               th:href="@{/trips/{id}(id=${pin.travelRoute.id})}"
+               class="nav-link">← 여행으로</a>
+               <button onclick="toggleTheme()" id="themeToggleBtn"
+                    style="background:none;border:1px solid #E5E8EB;border-radius:20px;padding:4px 12px;font-size:13px;cursor:pointer;color:#6B7684;">
+                🌙
+            </button>
+            <a href="/logout" class="nav-link">로그아웃</a>
+        </div>
+    </nav>
+
+<div class="container-main">
+
+    <!-- 핀 기본 정보 -->
+    <div class="info-card">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;">
+            <input type="text" id="pinTitle" class="date-input"
+                style="font-size:22px;font-weight:700;border:none;border-bottom:2px solid var(--border-color);border-radius:0;padding:4px 0;flex:1;background:transparent;color:var(--text-primary);"
+                th:value="${pin.title}">
+            <button class="save-btn" onclick="saveTitle()">저장</button>
+        </div>
+        <span id="titleMsg" class="save-msg">저장됐어요 ✓</span>
+
+        <div class="field-label">📅 날짜 & 시간</div>
+        <div class="date-row">
+            <div style="flex:1;min-width:130px;">
+                <div style="font-size:11px;color:var(--text-muted);margin-bottom:4px;">시작일</div>
+                <input type="date" id="visitDate" class="date-input"
+                    th:value="${pin.visitDate}"
+                    th:min="${pin.travelRoute != null ? pin.travelRoute.startDate : ''}"
+                    th:max="${pin.travelRoute != null ? pin.travelRoute.endDate : ''}">
+            </div>
+            <div style="flex:1;min-width:130px;">
+                <div style="font-size:11px;color:var(--text-muted);margin-bottom:4px;">종료일</div>
+                <input type="date" id="endDate" class="date-input"
+                    th:value="${pin.endDate}"
+                    th:min="${pin.travelRoute != null ? pin.travelRoute.startDate : ''}"
+                    th:max="${pin.travelRoute != null ? pin.travelRoute.endDate : ''}">
+            </div>
+            <div style="flex:1;min-width:110px;">
+                <div style="font-size:11px;color:var(--text-muted);margin-bottom:4px;">시간</div>
+                <div style="display:flex;gap:4px;align-items:center;">
+                    <input type="time" id="visitTime" class="date-input" th:value="${pin.visitTime}">
+                    <button onclick="document.getElementById('visitTime').value=''"
+                            style="background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:16px;padding:0;">✕</button>
+                </div>
+            </div>
+            <button class="save-btn" onclick="saveDates()">저장</button>
+        </div>
+        <div id="dateMsg" class="save-msg">저장됐어요 ✓</div>
+    </div>  <!-- info-card 닫힘 -->
+
+    <!-- 별점 -->
+    <div class="section-card" style="min-height:110px;">
+        <div class="section-title">⭐ 평가</div>
+        <div style="display:flex;align-items:center;gap:8px;">
+            <div id="starRating" style="display:flex;gap:4px;">
+                <span onclick="setRating(1)" style="font-size:28px;cursor:pointer;color:#F59E0B;line-height:1;width:28px;text-align:center;display:inline-block;">☆</span>
+                <span onclick="setRating(2)" style="font-size:28px;cursor:pointer;color:#F59E0B;line-height:1;width:28px;text-align:center;display:inline-block;">☆</span>
+                <span onclick="setRating(3)" style="font-size:28px;cursor:pointer;color:#F59E0B;line-height:1;width:28px;text-align:center;display:inline-block;">☆</span>
+                <span onclick="setRating(4)" style="font-size:28px;cursor:pointer;color:#F59E0B;line-height:1;width:28px;text-align:center;display:inline-block;">☆</span>
+                <span onclick="setRating(5)" style="font-size:28px;cursor:pointer;color:#F59E0B;line-height:1;width:28px;text-align:center;display:inline-block;">☆</span>
+            </div>
+            <span id="ratingMsg" style="font-size:13px;color:var(--text-secondary);width:80px;display:inline-block;">&nbsp;</span>
+        </div>
+    </div>
+
+    <!-- 메모 -->
+    <div class="section-card">
+        <div class="section-title">✏️ 여행 메모</div>
+        <textarea id="memoText" class="memo-area"
+                  th:text="${pin.memo}"
+                  placeholder="여행 메모를 남겨보세요"></textarea>
+        <button class="save-btn" style="margin-top:12px;" onclick="saveMemo()">저장</button>
+        <div id="memoMsg" class="save-msg">저장됐어요 ✓</div>
+    </div>
+
+    <!-- 사진 갤러리 -->
+    <div class="section-card">
+        <div class="section-title">📷 사진</div>
+        <div class="photo-grid" id="photoGrid"></div>
+        <div id="uploadArea" class="upload-area" style="margin-top:12px;"
+            onclick="document.getElementById('photoFileInput').click()">
+            <div style="font-size:28px;">📷</div>
+            <div class="upload-label">클릭해서 사진 추가 (최대 5장)</div>
+            <input type="file" id="photoFileInput" accept="image/*"
+                style="display:none;" onchange="uploadPhoto(this)">
+        </div>
+        <div id="photoCount" style="font-size:12px;color:var(--text-muted);margin-top:8px;text-align:center;"></div>
+    </div>
+
+    <!-- 방명록 -->
+    <div class="section-card">
+        <div class="section-title">💬 방명록</div>
+        <div style="display:flex;gap:8px;margin-bottom:16px;">
+            <input type="text" id="commentInput" class="date-input"
+                placeholder="이곳에서의 기억을 남겨보세요"
+                onkeypress="if(event.key==='Enter') addComment()">
+            <button class="save-btn" onclick="addComment()">등록</button>
+        </div>
+        <div id="commentList"></div>
+    </div>
+
+    <!-- 핀 삭제 -->
+    <div class="section-card">
+        <button class="delete-btn" onclick="deletePin()">이 장소 삭제</button>
+    </div>
+
+</div>
+
+<script th:inline="javascript">
+    const pinId = [[${pin.id}]];
+    const tripRouteId = [[${pin.travelRoute != null ? pin.travelRoute.id : null}]];
+    let currentRating = [[${pin.rating}]] || 0;
+    const ratingLabels = ['', '별로예요', '그냥 그래요', '괜찮아요', '좋아요', '최고예요!'];
+
+    // 테마
+    function applyTheme(theme) {
+        document.documentElement.setAttribute('data-theme', theme);
+        document.getElementById('themeToggleBtn').textContent = theme === 'dark' ? '☀️' : '🌙';
+    }
+    function toggleTheme() {
+        const current = document.documentElement.getAttribute('data-theme');
+        const next = current === 'dark' ? 'light' : 'dark';
+        localStorage.setItem('theme', next);
+        applyTheme(next);
+    }
+    (function initTheme() {
+        const saved = localStorage.getItem('theme') || 'light';
+        applyTheme(saved);
+    })();
+
+    // 제목 저장
+    function saveTitle() {
+        const title = document.getElementById('pinTitle').value.trim();
+        if (!title) return;
+        fetch(`/api/pins/${pinId}/title`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ title })
+        }).then(r => {
+            if (r.ok) {
+                document.getElementById('titleMsg').style.display = 'block';
+                setTimeout(() => document.getElementById('titleMsg').style.display = 'none', 2000);
+            }
+        });
+    }
+
+    // 날짜 저장
+    function saveDates() {
+        const visitDate = document.getElementById('visitDate').value;
+        const endDate = document.getElementById('endDate').value;
+        const visitTime = document.getElementById('visitTime').value;
+        if (!visitDate) { alert('시작일을 선택해주세요!'); return; }
+        fetch(`/api/pins/${pinId}/dates`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ visitDate, endDate: endDate || visitDate, visitTime: visitTime || null })
+        }).then(r => {
+            if (r.ok) {
+                document.getElementById('titleMsg').style.display = 'block';
+                setTimeout(() => document.getElementById('titleMsg').style.display = 'none', 2000);
+            }
+        });
+    }
+
+    // 메모 저장
+    function saveMemo() {
+        const memo = document.getElementById('memoText').value;
+        fetch(`/api/pins/${pinId}/memo`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ memo })
+        }).then(r => {
+            if (r.ok) {
+                document.getElementById('memoMsg').style.display = 'block';
+                setTimeout(() => document.getElementById('memoMsg').style.display = 'none', 2000);
+            }
+        });
+    }
+
+    // 핀 삭제
+    function deletePin() {
+        if (!confirm('이 장소를 삭제할까요?')) return;
+        fetch(`/api/pins/${pinId}`, { method: 'DELETE' })
+            .then(r => {
+                if (r.ok) location.href = `/trips/${tripRouteId}`;
+            });
+    }
+
+    // 별점
+    function renderStars(rating) {
+        const stars = document.getElementById('starRating').children;
+        for (let i = 0; i < 5; i++) {
+            stars[i].textContent = i < rating ? '★' : '☆';
+            stars[i].style.lineHeight = '1';
+        }
+        document.getElementById('ratingMsg').textContent = rating ? ratingLabels[rating] : '\u00A0';
+    }
+
+    function setRating(rating) {
+        if (currentRating === rating) {
+            currentRating = 0;
+        } else {
+            currentRating = rating;
+        }
+        renderStars(currentRating);
+        fetch(`/api/pins/${pinId}/rating`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ rating: currentRating })
+        });
+    }
+
+    // 댓글
+    function loadComments() {
+        fetch(`/api/pins/${pinId}/comments`)
+            .then(r => r.json())
+            .then(comments => {
+                if (comments.length === 0) {
+                    document.getElementById('commentList').innerHTML =
+                        '<div style="text-align:center;color:#B0B8C1;padding:16px;font-size:13px;">아직 남겨진 글이 없어요</div>';
+                    return;
+                }
+                document.getElementById('commentList').innerHTML = comments.map(c => {
+                    const date = new Date(c.createdAt);
+                    const dateStr = `${date.getMonth()+1}/${date.getDate()} ${String(date.getHours()).padStart(2,'0')}:${String(date.getMinutes()).padStart(2,'0')}`;
+                    const myButtons = c.isMine ? `
+                        <div style="display:flex;gap:4px;">
+                            <button onclick="editComment(${c.commentId}, '${c.content.replace(/'/g, "\\'")}')"
+                                    style="background:none;border:none;color:#B0B8C1;cursor:pointer;font-size:11px;">수정</button>
+                            <button onclick="deleteComment(${c.commentId})"
+                                    style="background:none;border:none;color:#B0B8C1;cursor:pointer;font-size:12px;">✕</button>
+                        </div>` : '';
+                    return `
+                        <div style="padding:12px 0;border-bottom:1px solid var(--border-light);" id="comment-${c.commentId}">
+                            <div style="display:flex;justify-content:space-between;align-items:start;">
+                                <div>
+                                    <span style="font-size:13px;font-weight:700;color:var(--text-primary);">${c.nickname}</span>
+                                    <span style="font-size:11px;color:var(--text-muted);margin-left:6px;">${dateStr}</span>
+                                </div>
+                                ${myButtons}
+                            </div>
+                            <div style="font-size:14px;color:var(--text-secondary);margin-top:4px;" id="comment-content-${c.commentId}">${c.content}</div>
+                            <div id="comment-edit-${c.commentId}" style="display:none;margin-top:8px;">
+                                <div style="display:flex;gap:8px;">
+                                    <input type="text" id="comment-input-${c.commentId}"
+                                           style="flex:1;border:1.5px solid var(--border-color);border-radius:8px;padding:6px 10px;font-size:13px;background:var(--bg-card);color:var(--text-primary);"
+                                           value="${c.content.replace(/"/g, '&quot;')}">
+                                    <button onclick="saveComment(${c.commentId})"
+                                            style="background:var(--accent);color:white;border:none;padding:6px 12px;border-radius:8px;font-size:12px;cursor:pointer;">저장</button>
+                                    <button onclick="cancelEdit(${c.commentId})"
+                                            style="background:none;border:1px solid var(--border-color);color:var(--text-secondary);padding:6px 12px;border-radius:8px;font-size:12px;cursor:pointer;">취소</button>
+                                </div>
+                            </div>
+                        </div>`;
+                }).join('');
+            });
+    }
+
+    function addComment() {
+        const content = document.getElementById('commentInput').value.trim();
+        if (!content) return;
+        fetch(`/api/pins/${pinId}/comments`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ content })
+        }).then(r => {
+            if (r.ok) {
+                document.getElementById('commentInput').value = '';
+                loadComments();
+            }
+        });
+    }
+
+    function deleteComment(commentId) {
+        if (!confirm('이 글을 삭제할까요?')) return;
+        fetch(`/api/pins/comments/${commentId}`, { method: 'DELETE' })
+            .then(r => { if (r.ok) loadComments(); });
+    }
+
+    function editComment(commentId, content) {
+        document.getElementById(`comment-content-${commentId}`).style.display = 'none';
+        document.getElementById(`comment-edit-${commentId}`).style.display = 'block';
+        document.getElementById(`comment-input-${commentId}`).focus();
+    }
+
+    function cancelEdit(commentId) {
+        document.getElementById(`comment-content-${commentId}`).style.display = 'block';
+        document.getElementById(`comment-edit-${commentId}`).style.display = 'none';
+    }
+
+    function saveComment(commentId) {
+        const content = document.getElementById(`comment-input-${commentId}`).value.trim();
+        if (!content) return;
+        fetch(`/api/pins/comments/${commentId}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ content })
+        }).then(r => { if (r.ok) loadComments(); });
+    }
+
+    // 사진
+    function loadPhotos() {
+        fetch(`/api/pins/${pinId}/photos`)
+            .then(r => r.json())
+            .then(photos => {
+                const count = photos.length;
+                document.getElementById('photoCount').textContent = `${count}/5장`;
+                document.getElementById('uploadArea').style.display = count >= 5 ? 'none' : 'block';
+
+                if (photos.length === 0) {
+                    document.getElementById('photoGrid').innerHTML =
+                        '<div style="grid-column:1/-1;text-align:center;color:#B0B8C1;padding:20px;font-size:13px;">아직 사진이 없어요</div>';
+                    return;
+                }
+
+                document.getElementById('photoGrid').innerHTML = photos.map(p => `
+                    <div class="photo-wrap">
+                        <img src="${p.filePath}" alt="${p.fileName}"
+                             onclick="openPhotoViewer('${p.filePath}')">
+                        <button class="photo-del" onclick="deletePhoto(${p.photoId})">✕</button>
+                        <button onclick="setRepresentative(${p.photoId})"
+                                style="position:absolute;bottom:4px;left:4px;background:${p.representative ? '#1B6DFF' : 'rgba(0,0,0,0.5)'};color:white;border:none;font-size:9px;padding:2px 5px;border-radius:4px;cursor:pointer;">
+                            ${p.representative ? '⭐대표' : '대표설정'}
+                        </button>
+                    </div>
+                `).join('');
+            });
+    }
+
+    function uploadPhoto(input) {
+        if (!input.files || !input.files[0]) return;
+        const formData = new FormData();
+        formData.append('file', input.files[0]);
+        fetch(`/api/pins/${pinId}/photos`, {
+            method: 'POST',
+            body: formData
+        }).then(r => {
+            if (r.ok) {
+                input.value = '';
+                loadPhotos();
+            } else {
+                r.text().then(msg => alert(msg));
+            }
+        });
+    }
+
+    function deletePhoto(photoId) {
+        if (!confirm('이 사진을 삭제할까요?')) return;
+        fetch(`/api/pins/photos/${photoId}`, { method: 'DELETE' })
+            .then(r => { if (r.ok) loadPhotos(); });
+    }
+
+    function setRepresentative(photoId) {
+        fetch(`/api/pins/photos/${photoId}/representative`, { method: 'PUT' })
+            .then(r => { if (r.ok) loadPhotos(); });
+    }
+
+    function openPhotoViewer(filePath) {
+        const overlay = document.createElement('div');
+        overlay.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.9);z-index:9999;display:flex;align-items:center;justify-content:center;cursor:pointer;';
+        overlay.innerHTML = `<img src="${filePath}" style="max-width:90%;max-height:90%;border-radius:8px;">`;
+        overlay.onclick = () => document.body.removeChild(overlay);
+        document.body.appendChild(overlay);
+    }
+
+    // 웹소켓
+    let stompClient = null;
+
+    function connectWebSocket() {
+        if (!tripRouteId) return;
+        const socket = new SockJS('/ws');
+        stompClient = new StompJs.Client({
+            webSocketFactory: () => socket,
+            reconnectDelay: 5000,
+            onConnect: () => {
+                stompClient.subscribe(`/topic/trip/${tripRouteId}`, (message) => {
+                    if (message.body === 'COMMENT_CHANGED') {
+                        loadComments();
+                    }
+                });
+            }
+        });
+        stompClient.activate();
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+        renderStars(currentRating);
+        loadComments();
+        loadPhotos();
+        connectWebSocket();
+    });
+</script>
+
+<script src="https://cdn.jsdelivr.net/npm/sockjs-client@1/dist/sockjs.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@stomp/stompjs@7/bundles/stomp.umd.min.js"></script>
+<script src="/js/notifications.js"></script>
+</body>
+</body>
+</html>
