@@ -38,7 +38,8 @@ public class SecurityConfig {
             )
             .sessionManagement(session -> session
                 .invalidSessionUrl("/login")
-                .maximumSessions(1)
+                .maximumSessions(-1)
+                .maxSessionsPreventsLogin(false)
             )
             .csrf(csrf -> csrf.disable())
             .headers(headers -> headers
