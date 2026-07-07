@@ -179,8 +179,8 @@
 
         <div class="route-grid">
             <div th:each="route : ${routes}" class="route-card">
-                <a th:href="@{/share/{token}(token=${route.shareToken})}"
-                   class="card-cover">
+                <a th:href="@{/explore/{id}(id=${route.id})}"
+                    class="card-cover">
                     <div class="card-dest" th:text="${route.destination}"></div>
                     <div class="card-name" th:text="${route.name}"></div>
                     <div class="card-date">

@@ -179,7 +179,7 @@
             }
             .map-panel {
                 height: 300px;
-                order: -1; /* 지도를 일정 패널 위로 */
+                order: -1;
             }
             .schedule-panel {
                 height: auto;
@@ -187,22 +187,28 @@
                 border-right: none;
                 border-bottom: 1px solid var(--border-color);
             }
-            .cover {
-                padding: 20px 16px 16px;
-            }
+            .cover { padding: 20px 16px 16px; }
             .cover-name { font-size: 18px; }
-            .day-tabs-wrap { top: 57px; }
+            .cover button {
+                font-size: 11px !important;
+                padding: 5px 10px !important;
+            }
             .panel-header { padding: 0 16px 12px; }
             .pin-item { padding: 12px 16px; }
+            .day-tabs-wrap { top: 53px; }
         }
 
         @media (max-width: 600px) {
-            .cover button {
-                font-size: 11px;
-                padding: 5px 10px;
-            }
             .cover-name { font-size: 16px; }
             .map-panel { height: 250px; }
+            .cover button {
+                font-size: 10px !important;
+                padding: 4px 8px !important;
+                margin-top: 6px !important;
+                margin-left: 4px !important;
+            }
+            .nav-bar { padding: 12px 16px; }
+            .brand { font-size: 16px; }
         }
         .modal-content { border-radius: 16px; border: none; background: var(--bg-card); }
         .modal-header { border-bottom: 1px solid var(--border-light); padding: 20px 24px; }
@@ -243,6 +249,15 @@
         }
         .search-result-item:hover { background: var(--bg-main); }
         .search-result-item:last-child { border-bottom: none; }
+
+        @media (max-width: 600px) {
+            .modal-dialog { margin: 10px; }
+            .modal-content { border-radius: 12px; }
+            .modal-body { padding: 16px; }
+            .modal-header { padding: 14px 16px; }
+            .modal-footer { padding: 12px 16px; }
+            .form-control { font-size: 16px; } /* iOS 줌 방지 */
+        }
     </style>
 </head>
 <body>

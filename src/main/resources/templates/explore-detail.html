@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title th:text="${route.name} + ' - 트래블로그'">여행 상세 - 트래블로그</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --bg-main: #F5F6F8;
+            --bg-card: #ffffff;
+            --bg-subtle: #F0F4FF;
+            --text-primary: #191F28;
+            --text-secondary: #6B7684;
+            --text-muted: #B0B8C1;
+            --border-color: #E5E8EB;
+            --border-light: #F2F4F6;
+            --accent: #1B6DFF;
+            --accent-hover: #1557D4;
+        }
+        [data-theme="dark"] {
+            --bg-main: #15171C;
+            --bg-card: #1E2128;
+            --bg-subtle: #1A2740;
+            --text-primary: #F0F2F5;
+            --text-secondary: #9BA3AF;
+            --text-muted: #6B7280;
+            --border-color: #2D3139;
+            --border-light: #262A33;
+            --accent: #4D8DFF;
+            --accent-hover: #3D7AEF;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { background: var(--bg-main); font-family: 'Noto Sans KR', sans-serif; }
+        .nav-bar {
+            background: var(--bg-card);
+            padding: 14px 24px;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+        .brand { font-size: 18px; font-weight: 700; color: var(--accent); text-decoration: none; }
+        .nav-link { color: var(--text-secondary); text-decoration: none; font-size: 13px; }
+        .cover {
+            background: linear-gradient(135deg, #1B6DFF 0%, #6FA8FF 100%);
+            padding: 32px 24px 24px;
+            color: white;
+        }
+        .cover-dest { font-size: 13px; font-weight: 600; opacity: 0.85; margin-bottom: 6px; }
+        .cover-name { font-size: 24px; font-weight: 700; margin-bottom: 8px; }
+        .cover-date { font-size: 13px; opacity: 0.85; }
+        .cover-author { font-size: 13px; opacity: 0.85; margin-top: 6px; }
+        .day-tabs-wrap {
+            background: var(--bg-card);
+            border-bottom: 1px solid var(--border-color);
+            padding: 0 16px;
+            display: flex;
+            overflow-x: auto;
+            position: sticky;
+            top: 57px;
+            z-index: 99;
+        }
+        .day-tab {
+            padding: 14px 16px;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 500;
+            color: var(--text-secondary);
+            border-bottom: 2px solid transparent;
+            white-space: nowrap;
+        }
+        .day-tab.active { color: var(--accent); border-bottom-color: var(--accent); font-weight: 700; }
+        .main-layout {
+            display: grid;
+            grid-template-columns: 380px 1fr;
+            height: calc(100vh - 140px);
+            min-height: 600px;
+        }
+        .schedule-panel {
+            background: var(--bg-card);
+            border-right: 1px solid var(--border-color);
+            overflow-y: auto;
+            padding: 20px 0;
+        }
+        .panel-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 20px 16px;
+            border-bottom: 1px solid var(--border-light);
+        }
+        .panel-title { font-size: 15px; font-weight: 700; color: var(--text-primary); }
+        .pin-list { padding: 12px 0; }
+        .pin-item {
+            display: flex;
+            gap: 12px;
+            padding: 14px 20px;
+            cursor: pointer;
+            transition: background 0.15s;
+        }
+        .pin-item:hover { background: var(--bg-main); }
+        .pin-num {
+            width: 26px;
+            height: 26px;
+            background: var(--accent);
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            font-weight: 700;
+            flex-shrink: 0;
+            margin-top: 4px;
+        }
+        .pin-info { flex: 1; min-width: 0; }
+        .pin-time { font-size: 12px; color: var(--accent); font-weight: 600; margin-bottom: 3px; }
+        .pin-name { font-size: 14px; font-weight: 600; color: var(--text-primary); margin-bottom: 3px; }
+        .pin-memo { font-size: 12px; color: var(--text-secondary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .pin-rating { font-size: 11px; color: #F59E0B; margin-bottom: 2px; }
+        .empty-day { text-align: center; padding: 48px 20px; color: var(--text-muted); }
+        .map-panel { position: relative; height: 100%; min-height: 600px; }
+        #exploreMap { width: 100%; height: 100%; min-height: 600px; }
+        .like-section {
+            padding: 16px 20px;
+            border-top: 1px solid var(--border-light);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .like-btn {
+            background: none;
+            border: 1.5px solid var(--border-color);
+            border-radius: 20px;
+            padding: 8px 16px;
+            font-size: 14px;
+            cursor: pointer;
+            color: var(--text-secondary);
+        }
+        .like-btn.liked { background: #FFF0F0; border-color: #FFD0D0; color: #FF6B6B; }
+        .copy-btn {
+            background: var(--accent);
+            color: white;
+            border: none;
+            border-radius: 20px;
+            padding: 8px 16px;
+            font-size: 14px;
+            cursor: pointer;
+        }
+        @media (max-width: 900px) {
+            .main-layout { grid-template-columns: 1fr; height: auto; }
+            .map-panel { height: 300px; order: -1; }
+            .schedule-panel { height: auto; max-height: 500px; border-right: none; }
+        }
+    </style>
+</head>
+<body>
+    <nav class="nav-bar">
+        <a class="brand" href="/trips">✈️ 트래블로그</a>
+        <div style="display:flex;align-items:center;gap:12px;">
+            <a href="/explore" class="nav-link">← 탐색</a>
+            <a href="/trips" class="nav-link">내 여행</a>
+            <button onclick="toggleTheme()" id="themeToggleBtn"
+                    style="background:none;border:1px solid #E5E8EB;border-radius:20px;padding:4px 12px;font-size:13px;cursor:pointer;color:#6B7684;">
+                🌙
+            </button>
+        </div>
+    </nav>
+
+    <div class="cover">
+        <div class="cover-dest" th:text="${route.destination}"></div>
+        <div class="cover-name" th:text="${route.name}"></div>
+        <div class="cover-date">
+            📅 <span th:text="${route.startDate}"></span>
+            <span th:if="${route.endDate != null}"> ~ </span>
+            <span th:text="${route.endDate}"></span>
+        </div>
+        <div class="cover-author">👤 <span th:text="${route.user.nickname}"></span>님의 여행</div>
+    </div>
+
+    <div class="day-tabs-wrap" id="dayTabs"></div>
+
+    <div class="main-layout">
+        <div class="schedule-panel">
+            <div class="panel-header">
+                <div class="panel-title" id="panelTitle">일정</div>
+            </div>
+            <div class="pin-list" id="pinList"></div>
+            <div class="like-section">
+                <button id="likeBtn"
+                        th:class="${liked} ? 'like-btn liked' : 'like-btn'"
+                        onclick="toggleLike()">
+                    <span th:text="${liked} ? '❤️' : '🤍'"></span>
+                    <span id="likeCount" th:text="${likeCount}"></span>
+                </button>
+                <button class="copy-btn" onclick="copyRoute()">📋 내 여행으로 복사</button>
+            </div>
+        </div>
+        <div class="map-panel">
+            <div id="exploreMap"></div>
+        </div>
+    </div>
+
+    <script th:inline="javascript">
+        const routeId = [[${route.id}]];
+        const googleMapsKey = [[${googleMapsKey}]];
+        let map;
+        let allPins = [];
+        let groupedPins = {};
+        let currentDate = null;
+
+        function applyTheme(theme) {
+            document.documentElement.setAttribute('data-theme', theme);
+            document.getElementById('themeToggleBtn').textContent = theme === 'dark' ? '☀️' : '🌙';
+        }
+        function toggleTheme() {
+            const current = document.documentElement.getAttribute('data-theme');
+            const next = current === 'dark' ? 'light' : 'dark';
+            localStorage.setItem('theme', next);
+            applyTheme(next);
+        }
+        (function() {
+            const saved = localStorage.getItem('theme') || 'light';
+            applyTheme(saved);
+        })();
+
+        function initMap() {
+            map = new google.maps.Map(document.getElementById('exploreMap'), {
+                center: { lat: 36.5, lng: 127.5 },
+                zoom: 7,
+                styles: [{ featureType: 'poi', stylers: [{ visibility: 'off' }] }]
+            });
+            loadPins();
+        }
+
+        function loadPins() {
+            fetch(`/api/trips/${routeId}/pins`)
+                .then(r => r.json())
+                .then(pins => {
+                    allPins = pins;
+                    groupedPins = {};
+                    pins.forEach(pin => {
+                        if (!groupedPins[pin.visitDate]) groupedPins[pin.visitDate] = [];
+                        groupedPins[pin.visitDate].push(pin);
+                    });
+                    if (Object.keys(groupedPins).length > 0 && !currentDate) {
+                        currentDate = Object.keys(groupedPins).sort()[0];
+                    }
+                    renderDayTabs();
+                    renderPinList();
+                    renderMap();
+                });
+        }
+
+        function renderDayTabs() {
+            const dates = Object.keys(groupedPins).sort();
+            document.getElementById('dayTabs').innerHTML = dates.map((date, idx) => `
+                <div class="day-tab ${date === currentDate ? 'active' : ''}"
+                     onclick="selectDate('${date}')">
+                    Day ${idx + 1}<br>
+                    <span style="font-size:10px;">${date}</span>
+                </div>
+            `).join('');
+        }
+
+        function selectDate(date) {
+            currentDate = date;
+            renderDayTabs();
+            renderPinList();
+            renderMap();
+        }
+
+        function renderPinList() {
+            const pins = groupedPins[currentDate] || [];
+            const dayIdx = Object.keys(groupedPins).sort().indexOf(currentDate) + 1;
+            document.getElementById('panelTitle').textContent = `${currentDate} (Day ${dayIdx})`;
+
+            if (pins.length === 0) {
+                document.getElementById('pinList').innerHTML =
+                    '<div class="empty-day"><div style="font-size:36px;margin-bottom:12px;">📍</div><div style="font-size:14px;">장소가 없어요</div></div>';
+                return;
+            }
+
+            document.getElementById('pinList').innerHTML = pins.map((pin, idx) => `
+                <div class="pin-item" onclick="focusPin(${pin.latitude}, ${pin.longitude})">
+                    <div class="pin-num">${idx + 1}</div>
+                    <div class="pin-info">
+                        ${pin.visitTime ? `<div class="pin-time">🕐 ${pin.visitTime.substring(0,5)}</div>` : ''}
+                        <div class="pin-name">${pin.title}</div>
+                        ${pin.rating ? `<div class="pin-rating">${'★'.repeat(pin.rating)}${'☆'.repeat(5 - pin.rating)}</div>` : ''}
+                        ${pin.memo ? `<div class="pin-memo">${pin.memo}</div>` : ''}
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function renderMap() {
+            const pins = groupedPins[currentDate] || [];
+            if (!map || pins.length === 0) return;
+
+            // 기존 마커 제거
+            if (window._markers) window._markers.forEach(m => m.setMap(null));
+            window._markers = [];
+
+            const bounds = new google.maps.LatLngBounds();
+            pins.forEach((pin, idx) => {
+                const marker = new google.maps.Marker({
+                    position: { lat: pin.latitude, lng: pin.longitude },
+                    map,
+                    label: { text: String(idx + 1), color: 'white', fontWeight: 'bold' },
+                    title: pin.title
+                });
+                window._markers.push(marker);
+                bounds.extend({ lat: pin.latitude, lng: pin.longitude });
+            });
+            map.fitBounds(bounds);
+        }
+
+        function focusPin(lat, lng) {
+            if (map) {
+                map.panTo({ lat, lng });
+                map.setZoom(15);
+            }
+        }
+
+        function toggleLike() {
+            fetch(`/api/trips/${routeId}/like`, { method: 'POST' })
+                .then(r => {
+                    if (r.status === 401) {
+                        alert('로그인 후 좋아요를 눌러봐요!');
+                        window.location.href = '/login';
+                        return;
+                    }
+                    return r.json();
+                })
+                .then(data => {
+                    if (!data) return;
+                    const btn = document.getElementById('likeBtn');
+                    btn.className = data.liked ? 'like-btn liked' : 'like-btn';
+                    btn.querySelector('span').textContent = data.liked ? '❤️' : '🤍';
+                    document.getElementById('likeCount').textContent = data.count;
+                });
+        }
+
+        function copyRoute() {
+            if (!confirm('이 여행 루트를 내 여행으로 복사할까요?')) return;
+            fetch(`/api/trips/${routeId}/copy`, { method: 'POST' })
+                .then(r => {
+                    if (r.status === 401) {
+                        alert('로그인 후 복사할 수 있어요!');
+                        window.location.href = '/login';
+                        return;
+                    }
+                    return r.json();
+                })
+                .then(data => {
+                    if (!data) return;
+                    alert('여행이 복사됐어요! 내 여행에서 확인해봐요 😊');
+                    window.location.href = `/trips/${data.routeId}`;
+                });
+        }
+    </script>
+    <script th:src="@{'https://maps.googleapis.com/maps/api/js?key=' + ${googleMapsKey} + '&callback=initMap'}" async defer></script>
+    <script src="/js/notifications.js"></script>
+</body>
+</html>
