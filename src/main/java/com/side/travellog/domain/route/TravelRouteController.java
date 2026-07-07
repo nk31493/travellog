@@ -29,6 +29,8 @@ public class TravelRouteController {
     private final com.side.travellog.config.TripUpdateService tripUpdateService;
     private final com.side.travellog.domain.notification.NotificationService notificationService;
     private final com.side.travellog.domain.user.UserRepository userRepository;
+    private final TravelRouteLikeRepository likeRepository;
+    private final TravelRouteRepository travelRouteRepository;
 
     @Value("${google.maps.key}")
     private String googleMapsKey;
@@ -599,6 +601,67 @@ public class TravelRouteController {
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().body(e.getMessage());
         }
+    }
+
+    @PutMapping("/api/trips/{routeId}/public")
+    @ResponseBody
+    public ResponseEntity<?> updatePublic(@PathVariable Long routeId,
+                                        @AuthenticationPrincipal UserDetails userDetails,
+                                        @RequestBody Map<String, Boolean> body) {
+        travelRouteService.updatePublic(routeId, userDetails.getUsername(), body.get("isPublic"));
+        return ResponseEntity.ok().build();
+    }
+
+    @PostMapping("/api/trips/{routeId}/like")
+    @ResponseBody
+    public ResponseEntity<?> toggleLike(@PathVariable Long routeId,
+                                        @AuthenticationPrincipal UserDetails userDetails) {
+        if (userDetails == null) {
+            return ResponseEntity.status(401).body("로그인이 필요해요");
+        }
+        TravelRoute route = travelRouteRepository.findById(routeId)
+                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 여행입니다."));
+        com.side.travellog.domain.user.User user =
+                userRepository.findByEmail(userDetails.getUsername());
+
+        java.util.Optional<TravelRouteLike> existing = likeRepository.findByTravelRouteAndUser(route, user);
+        boolean liked;
+        if (existing.isPresent()) {
+            likeRepository.delete(existing.get());
+            liked = false;
+        } else {
+            likeRepository.save(TravelRouteLike.builder()
+                    .travelRoute(route)
+                    .user(user)
+                    .build());
+            liked = true;
+        }
+
+        Map<String, Object> result = new HashMap<>();
+        result.put("liked", liked);
+        result.put("count", likeRepository.countByTravelRoute(route));
+        return ResponseEntity.ok(result);
+    }
+
+    @GetMapping("/api/trips/{routeId}/like/count")
+    @ResponseBody
+    public Map<String, Integer> getLikeCount(@PathVariable Long routeId) {
+        TravelRoute route = travelRouteRepository.findById(routeId)
+                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 여행입니다."));
+        return Map.of("count", likeRepository.countByTravelRoute(route));
+    }
+
+    @PostMapping("/api/trips/{routeId}/copy")
+    @ResponseBody
+    public ResponseEntity<?> copyRoute(@PathVariable Long routeId,
+                                        @AuthenticationPrincipal UserDetails userDetails) {
+        if (userDetails == null) {
+            return ResponseEntity.status(401).body("로그인이 필요해요");
+        }
+        TravelRoute copy = travelRouteService.copyRoute(routeId, userDetails.getUsername());
+        Map<String, Object> result = new HashMap<>();
+        result.put("routeId", copy.getId());
+        return ResponseEntity.ok(result);
     }
     
 }

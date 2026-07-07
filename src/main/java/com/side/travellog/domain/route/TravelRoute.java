@@ -77,4 +77,10 @@ public class TravelRoute {
         this.user = user;
     }
 
+    private boolean isPublic;
+
+    public void updatePublic(boolean isPublic) {
+        this.isPublic = isPublic;
+    }
+
 }

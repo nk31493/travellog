@@ -313,7 +313,12 @@
                 style="margin-top:8px;margin-left:8px;background:rgba(255,255,255,0.2);color:white;border:1px solid rgba(255,255,255,0.4);padding:6px 16px;border-radius:20px;font-size:12px;cursor:pointer;">
             👥 협업자
         </button>
-        <button th:if="${!isOwner}" onclick="leaveTrip()"
+        <button th:if="${isOwner}" onclick="togglePublic()" id="publicBtn"
+                th:data-public="${route.isPublic}"
+                style="margin-top:8px;margin-left:8px;background:rgba(255,255,255,0.2);color:white;border:1px solid rgba(255,255,255,0.4);padding:6px 16px;border-radius:20px;font-size:12px;cursor:pointer;">
+            <span th:text="${route.isPublic} ? '🌍 공개 중' : '🔒 비공개'"></span>
+        </button>
+                <button th:if="${!isOwner}" onclick="leaveTrip()"
                 style="margin-top:8px;margin-left:8px;background:rgba(255,80,80,0.25);color:white;border:1px solid rgba(255,255,255,0.4);padding:6px 16px;border-radius:20px;font-size:12px;cursor:pointer;">
             🚪 나가기
         </button>
@@ -620,6 +625,23 @@
         let mapPolyline = null;
         let pinModal;
         let stompClient = null;
+
+        function togglePublic() {
+            const btn = document.getElementById('publicBtn');
+            const isPublic = btn.dataset.public === 'true';
+            const newVal = !isPublic;
+
+            fetch(`/api/trips/${routeId}/public`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ isPublic: newVal })
+            }).then(r => {
+                if (r.ok) {
+                    btn.dataset.public = String(newVal);
+                    btn.querySelector('span').textContent = newVal ? '🌍 공개 중' : '🔒 비공개';
+                }
+            });
+        }
 
         function applyTheme(theme) {
             document.documentElement.setAttribute('data-theme', theme);

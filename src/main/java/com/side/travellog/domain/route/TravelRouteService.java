@@ -298,4 +298,94 @@ public class TravelRouteService {
                 "/trips/" + route.getId()
         );
     }
+
+    public void updatePublic(Long routeId, String email, boolean isPublic) {
+        TravelRoute route = getRouteByIdWithAccess(routeId, email);
+        route.updatePublic(isPublic);
+        // 공개 설정 시 shareToken 자동 생성
+        if (isPublic && (route.getShareToken() == null || route.getShareToken().isBlank())) {
+            String token = java.util.UUID.randomUUID().toString().replace("-", "");
+            route.updateShareToken(token);
+        }
+        travelRouteRepository.save(route);
+    }
+
+    public List<TravelRoute> getPublicRoutes() {
+        return travelRouteRepository.findByIsPublicTrueOrderByCreatedAtDesc();
+    }
+
+    public List<TravelRoute> getPublicRoutesSorted(String sort, String email) {
+        if (email != null) {
+            User user = userRepository.findByEmail(email);
+            if ("likes".equals(sort)) {
+                return travelRouteRepository.findPublicRoutesOrderByLikesExcludeUser(user);
+            }
+            return travelRouteRepository.findPublicRoutesOrderByCreatedAtExcludeUser(user);
+        }
+        if ("likes".equals(sort)) {
+            return travelRouteRepository.findPublicRoutesOrderByLikes();
+        }
+        return travelRouteRepository.findPublicRoutesOrderByCreatedAt();
+    }
+
+    public List<TravelRoute> searchPublicRoutes(String keyword, String email) {
+        if (email != null) {
+            User user = userRepository.findByEmail(email);
+            return travelRouteRepository.searchPublicRoutesExcludeUser(keyword, user);
+        }
+        return travelRouteRepository.searchPublicRoutes(keyword);
+    }
+
+    public List<String> getPublicDestinations() {
+        return travelRouteRepository.findPublicDestinations();
+    }
+
+    @Transactional
+    public TravelRoute copyRoute(Long routeId, String email) {
+        TravelRoute original = travelRouteRepository.findById(routeId)
+                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 여행입니다."));
+        if (!original.isPublic()) {
+            throw new IllegalArgumentException("공개된 여행만 복사할 수 있습니다.");
+        }
+        User user = userRepository.findByEmail(email);
+
+        // 날짜는 오늘부터 원본 기간만큼
+        long days = 0;
+        if (original.getStartDate() != null && original.getEndDate() != null) {
+            days = java.time.temporal.ChronoUnit.DAYS.between(original.getStartDate(), original.getEndDate());
+        }
+        java.time.LocalDate newStart = java.time.LocalDate.now();
+        java.time.LocalDate newEnd = newStart.plusDays(days);
+
+        TravelRoute copy = TravelRoute.builder()
+                .user(user)
+                .name("[복사] " + original.getName())
+                .destination(original.getDestination())
+                .startDate(newStart)
+                .endDate(newEnd)
+                .build();
+        travelRouteRepository.save(copy);
+
+        // 핀도 복사 (날짜 오프셋 적용)
+        List<TravelPin> pins = travelPinRepository.findByTravelRouteOrdered(original);
+        for (TravelPin pin : pins) {
+            long pinOffset = original.getStartDate() != null && pin.getVisitDate() != null
+                    ? java.time.temporal.ChronoUnit.DAYS.between(original.getStartDate(), pin.getVisitDate()) : 0;
+            TravelPin copiedPin = TravelPin.builder()
+                    .user(user)
+                    .travelRoute(copy)
+                    .title(pin.getTitle())
+                    .latitude(pin.getLatitude())
+                    .longitude(pin.getLongitude())
+                    .visitDate(newStart.plusDays(pinOffset))
+                    .endDate(newStart.plusDays(pinOffset))
+                    .visitTime(pin.getVisitTime())
+                    .memo(pin.getMemo())
+                    .orderNum(pin.getOrderNum())
+                    .build();
+            travelPinRepository.save(copiedPin);
+        }
+
+        return copy;
+    }
 }
