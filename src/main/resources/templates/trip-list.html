@@ -120,6 +120,23 @@
         .badge-past { display: none; }
 
         @media (max-width: 600px) {
+            .nav-bar {
+                padding: 10px 12px;
+                flex-wrap: wrap;
+                gap: 6px;
+            }
+            .brand { font-size: 15px; }
+            .nav-bar > div {
+                gap: 6px !important;
+                font-size: 11px;
+            }
+            .nav-bar a, .nav-bar button {
+                font-size: 11px !important;
+                padding: 3px 8px !important;
+            }
+        }
+
+        @media (max-width: 600px) {
             .hero { padding: 32px 16px; }
             .hero-title { font-size: 22px; }
             .hero-sub { font-size: 13px; }
