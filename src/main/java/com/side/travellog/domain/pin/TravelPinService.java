@@ -45,10 +45,33 @@ public class TravelPinService {
         User user = userRepository.findByEmail(email);
         TravelRoute route = checkRouteAccess(routeId, email);
 
+        // 필수 값 검증
+        if (title == null || title.isBlank()) {
+            throw new IllegalArgumentException("장소 이름을 입력해주세요.");
+        }
+        if (title.length() > 100) {
+            throw new IllegalArgumentException("장소 이름은 100자 이하로 입력해주세요.");
+        }
+        if (latitude == null || longitude == null) {
+            throw new IllegalArgumentException("위치 정보가 없어요. 장소를 다시 검색해주세요.");
+        }
+        if (latitude < -90 || latitude > 90 || longitude < -180 || longitude > 180) {
+            throw new IllegalArgumentException("올바르지 않은 위치 정보예요.");
+        }
+        if (visitDate == null) {
+            throw new IllegalArgumentException("방문 날짜를 입력해주세요.");
+        }
+        // 여행 날짜 범위 검증 (여행에 날짜가 설정된 경우만)
+        if (route.getStartDate() != null && route.getEndDate() != null) {
+            if (visitDate.isBefore(route.getStartDate()) || visitDate.isAfter(route.getEndDate())) {
+                throw new IllegalArgumentException("여행 기간 안의 날짜만 선택할 수 있어요.");
+            }
+        }
+
         // 현재 같은 날짜의 핀 개수를 orderNum으로 설정
         List<TravelPin> existingPins = travelPinRepository.findByTravelRouteOrdered(route);
         int orderNum = (int) existingPins.stream()
-                .filter(p -> p.getVisitDate().equals(visitDate))
+                .filter(p -> p.getVisitDate() != null && p.getVisitDate().equals(visitDate))
                 .count();
 
         TravelPin pin = TravelPin.builder()

@@ -32,9 +32,19 @@ public class ExpenseService {
     }
 
     public Expense addExpense(Long routeId, String email, String title,
-                               Integer amount, String category, LocalDate expenseDate, boolean shared) {
+                                Integer amount, String category, LocalDate expenseDate, boolean shared) {
         User user = userRepository.findByEmail(email);
         TravelRoute route = checkAccess(routeId, user);
+
+        if (title == null || title.isBlank()) {
+            throw new IllegalArgumentException("항목을 입력해주세요.");
+        }
+        if (amount == null || amount <= 0) {
+            throw new IllegalArgumentException("금액은 0보다 커야 해요.");
+        }
+        if (amount > 100_000_000) {
+            throw new IllegalArgumentException("금액이 너무 커요.");
+        }
 
         return expenseRepository.save(Expense.builder()
                 .travelRoute(route)
@@ -62,13 +72,21 @@ public class ExpenseService {
     }
 
     public void updateExpense(Long expenseId, String email, String title,
-                               Integer amount, String category, LocalDate expenseDate, boolean shared) {
+                                Integer amount, String category, LocalDate expenseDate, boolean shared) {
         Expense expense = expenseRepository.findById(expenseId)
                 .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 지출입니다."));
         User user = userRepository.findByEmail(email);
         if (!expense.getUser().getId().equals(user.getId())) {
             throw new IllegalArgumentException("본인이 등록한 지출만 수정할 수 있습니다.");
         }
+
+        if (title == null || title.isBlank()) {
+            throw new IllegalArgumentException("항목을 입력해주세요.");
+        }
+        if (amount == null || amount <= 0) {
+            throw new IllegalArgumentException("금액은 0보다 커야 해요.");
+        }
+
         expense.updateInfo(title, amount, category, expenseDate, shared);
         expenseRepository.save(expense);
     }
@@ -156,14 +174,18 @@ public class ExpenseService {
         User targetUser = userRepository.findById(targetUserId)
                 .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 사용자입니다."));
 
-        Optional<SettlementCheck> existing = settlementCheckRepository.findByExpenseAndUser(expense, targetUser);
-        if (existing.isPresent()) {
-            settlementCheckRepository.delete(existing.get());
-        } else {
-            settlementCheckRepository.save(SettlementCheck.builder()
-                    .expense(expense)
-                    .user(targetUser)
-                    .build());
+        try {
+            Optional<SettlementCheck> existing = settlementCheckRepository.findByExpenseAndUser(expense, targetUser);
+            if (existing.isPresent()) {
+                settlementCheckRepository.delete(existing.get());
+            } else {
+                settlementCheckRepository.save(SettlementCheck.builder()
+                        .expense(expense)
+                        .user(targetUser)
+                        .build());
+            }
+        } catch (org.springframework.dao.DataIntegrityViolationException e) {
+            // 동시 요청 시 무시 (이미 반영됨)
         }
     }
 

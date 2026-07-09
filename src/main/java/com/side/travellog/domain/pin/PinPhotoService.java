@@ -38,6 +38,11 @@ public class PinPhotoService {
         return pin;
     }
 
+    private static final java.util.Set<String> ALLOWED_TYPES = java.util.Set.of(
+            "image/jpeg", "image/png", "image/gif", "image/webp"
+    );
+    private static final long MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
+
     public PinPhoto uploadPhoto(Long pinId, String email, MultipartFile file) throws IOException {
         User user = userRepository.findByEmail(email);
         TravelPin pin = checkAccess(pinId, user);
@@ -46,10 +51,29 @@ public class PinPhotoService {
             throw new IllegalStateException("사진은 최대 5장까지 업로드할 수 있어요.");
         }
 
+        // 파일 검증
+        if (file.isEmpty()) {
+            throw new IllegalArgumentException("빈 파일은 업로드할 수 없어요.");
+        }
+        if (file.getSize() > MAX_FILE_SIZE) {
+            throw new IllegalArgumentException("파일 크기는 10MB 이하여야 해요.");
+        }
+        String contentType = file.getContentType();
+        if (contentType == null || !ALLOWED_TYPES.contains(contentType)) {
+            throw new IllegalArgumentException("이미지 파일만 업로드할 수 있어요 (JPG, PNG, GIF, WEBP).");
+        }
+
         String originalName = file.getOriginalFilename();
         String ext = originalName != null && originalName.contains(".")
                 ? originalName.substring(originalName.lastIndexOf("."))
                 : ".jpg";
+
+        // 확장자 화이트리스트 검증 (이중 안전장치)
+        java.util.Set<String> allowedExt = java.util.Set.of(".jpg", ".jpeg", ".png", ".gif", ".webp");
+        if (!allowedExt.contains(ext.toLowerCase())) {
+            throw new IllegalArgumentException("허용되지 않는 파일 형식이에요.");
+        }
+
         String fileName = UUID.randomUUID().toString() + ext;
 
         File dir = new File(uploadDir);

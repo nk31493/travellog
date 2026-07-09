@@ -45,6 +45,14 @@ public class ChecklistService {
     public ChecklistItem addItem(Long routeId, String email, String content) {
         User user = userRepository.findByEmail(email);
         TravelRoute route = checkAccess(routeId, user);
+
+        if (content == null || content.isBlank()) {
+            throw new IllegalArgumentException("내용을 입력해주세요.");
+        }
+        if (content.length() > 100) {
+            throw new IllegalArgumentException("100자 이하로 입력해주세요.");
+        }
+
         int nextOrder = checklistItemRepository.findByTravelRouteAndUserOrderByOrderNumAsc(route, user).size();
         return checklistItemRepository.save(ChecklistItem.builder()
                 .travelRoute(route)

@@ -645,17 +645,22 @@ public class TravelRouteController {
         com.side.travellog.domain.user.User user =
                 userRepository.findByEmail(userDetails.getUsername());
 
-        java.util.Optional<TravelRouteLike> existing = likeRepository.findByTravelRouteAndUser(route, user);
         boolean liked;
-        if (existing.isPresent()) {
-            likeRepository.delete(existing.get());
-            liked = false;
-        } else {
-            likeRepository.save(TravelRouteLike.builder()
-                    .travelRoute(route)
-                    .user(user)
-                    .build());
-            liked = true;
+        try {
+            java.util.Optional<TravelRouteLike> existing = likeRepository.findByTravelRouteAndUser(route, user);
+            if (existing.isPresent()) {
+                likeRepository.delete(existing.get());
+                liked = false;
+            } else {
+                likeRepository.save(TravelRouteLike.builder()
+                        .travelRoute(route)
+                        .user(user)
+                        .build());
+                liked = true;
+            }
+        } catch (org.springframework.dao.DataIntegrityViolationException e) {
+            // 동시 요청으로 이미 좋아요가 눌린 경우, 현재 상태를 그대로 반환
+            liked = likeRepository.findByTravelRouteAndUser(route, user).isPresent();
         }
 
         Map<String, Object> result = new HashMap<>();

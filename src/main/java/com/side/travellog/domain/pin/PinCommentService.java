@@ -31,6 +31,13 @@ public class PinCommentService {
         User user = userRepository.findByEmail(email);
         checkAccess(pin, user);
 
+        if (content == null || content.isBlank()) {
+            throw new IllegalArgumentException("내용을 입력해주세요.");
+        }
+        if (content.length() > 500) {
+            throw new IllegalArgumentException("댓글은 500자 이하로 입력해주세요.");
+        }
+
         return pinCommentRepository.save(PinComment.builder()
                 .travelPin(pin)
                 .user(user)
