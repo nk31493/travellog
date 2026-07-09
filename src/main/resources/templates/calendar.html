@@ -109,6 +109,23 @@
             display: block;
         }
         .trip-chip:hover { background: var(--accent-hover); }
+
+        @media (max-width: 600px) {
+            .nav-bar {
+                padding: 10px 12px;
+                flex-wrap: wrap;
+                gap: 6px;
+            }
+            .brand { font-size: 15px; }
+            .nav-bar > div {
+                gap: 6px !important;
+                font-size: 11px;
+            }
+            .nav-bar a, .nav-bar button {
+                font-size: 11px !important;
+                padding: 3px 8px !important;
+            }
+        }
     </style>
 </head>
 <body>
