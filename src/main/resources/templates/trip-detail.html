@@ -325,6 +325,10 @@
             style="margin-top:8px;margin-left:8px;background:rgba(255,255,255,0.2);color:white;border:1px solid rgba(255,255,255,0.4);padding:6px 16px;border-radius:20px;font-size:12px;cursor:pointer;">
             💰 경비
         </button>
+        <button onclick="openReservationModal()"
+            style="margin-top:8px;margin-left:8px;background:rgba(255,255,255,0.2);color:white;border:1px solid rgba(255,255,255,0.4);padding:6px 16px;border-radius:20px;font-size:12px;cursor:pointer;">
+            🎫 예약 정보
+        </button>
         <button onclick="openCollaboratorModal()"
                 style="margin-top:8px;margin-left:8px;background:rgba(255,255,255,0.2);color:white;border:1px solid rgba(255,255,255,0.4);padding:6px 16px;border-radius:20px;font-size:12px;cursor:pointer;">
             👥 협업자
@@ -624,6 +628,54 @@
                 </div>
             </div>
         </div>
+        <!-- 예약 정보 모달 -->
+        <div class="modal fade" id="reservationModal" tabindex="-1">
+            <div class="modal-dialog modal-dialog-centered modal-lg">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">🎫 예약 정보</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="row mb-2">
+                            <div class="col-3">
+                                <select id="resType" class="form-select">
+                                    <option value="항공">✈️ 항공</option>
+                                    <option value="숙소">🏨 숙소</option>
+                                    <option value="렌터카">🚗 렌터카</option>
+                                    <option value="기타">📌 기타</option>
+                                </select>
+                            </div>
+                            <div class="col-5">
+                                <input type="text" id="resTitle" class="form-control" placeholder="예: 대한항공 KE123">
+                            </div>
+                            <div class="col-4">
+                                <input type="text" id="resConfirm" class="form-control" placeholder="예약번호">
+                            </div>
+                        </div>
+                        <div class="row mb-3">
+                            <div class="col-6">
+                                <label class="form-label" style="font-size:11px;">시작 (출발/체크인)</label>
+                                <input type="datetime-local" id="resStart" class="form-control">
+                            </div>
+                            <div class="col-6">
+                                <label class="form-label" style="font-size:11px;">종료 (도착/체크아웃)</label>
+                                <input type="datetime-local" id="resEnd" class="form-control">
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <input type="text" id="resMemo" class="form-control" placeholder="메모 (선택)">
+                        </div>
+                        <button onclick="addReservation()"
+                                style="width:100%;background:#1B6DFF;color:white;border:none;padding:10px;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer;margin-bottom:20px;">
+                            추가하기
+                        </button>
+
+                        <div id="reservationList"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script th:inline="javascript">
@@ -641,6 +693,86 @@
         let mapPolyline = null;
         let pinModal;
         let stompClient = null;
+
+        let reservationModal;
+
+        function openReservationModal() {
+            if (!reservationModal) {
+                reservationModal = new bootstrap.Modal(document.getElementById('reservationModal'));
+            }
+            loadReservations();
+            reservationModal.show();
+        }
+
+        const typeIcons = { '항공': '✈️', '숙소': '🏨', '렌터카': '🚗', '기타': '📌' };
+
+        function loadReservations() {
+            fetch(`/api/trips/${routeId}/reservations`)
+                .then(r => r.json())
+                .then(reservations => {
+                    if (reservations.length === 0) {
+                        document.getElementById('reservationList').innerHTML =
+                            '<div style="text-align:center;color:var(--text-muted);padding:20px;font-size:13px;">등록된 예약이 없어요</div>';
+                        return;
+                    }
+                    document.getElementById('reservationList').innerHTML = reservations.map(r => {
+                        const start = new Date(r.startDateTime);
+                        const startStr = `${start.getMonth()+1}/${start.getDate()} ${String(start.getHours()).padStart(2,'0')}:${String(start.getMinutes()).padStart(2,'0')}`;
+                        let endStr = '';
+                        if (r.endDateTime) {
+                            const end = new Date(r.endDateTime);
+                            endStr = ` ~ ${end.getMonth()+1}/${end.getDate()} ${String(end.getHours()).padStart(2,'0')}:${String(end.getMinutes()).padStart(2,'0')}`;
+                        }
+                        return `
+                            <div style="background:var(--bg-main, #F5F6F8);border-radius:12px;padding:14px 16px;margin-bottom:10px;">
+                                <div style="display:flex;justify-content:space-between;align-items:start;">
+                                    <div>
+                                        <span style="font-size:13px;font-weight:700;color:var(--text-primary, #191F28);">${typeIcons[r.type] || '📌'} ${r.title}</span>
+                                        ${r.confirmationNumber ? `<div style="font-size:11px;color:var(--text-secondary, #6B7684);margin-top:2px;">예약번호: ${r.confirmationNumber}</div>` : ''}
+                                        <div style="font-size:12px;color:var(--accent, #1B6DFF);margin-top:4px;">🕐 ${startStr}${endStr}</div>
+                                        ${r.memo ? `<div style="font-size:12px;color:var(--text-secondary, #6B7684);margin-top:4px;">${r.memo}</div>` : ''}
+                                    </div>
+                                    <button onclick="deleteReservation(${r.reservationId})"
+                                            style="background:none;border:none;color:var(--text-muted, #B0B8C1);cursor:pointer;font-size:14px;">✕</button>
+                                </div>
+                            </div>
+                        `;
+                    }).join('');
+                });
+        }
+
+        function addReservation() {
+            const type = document.getElementById('resType').value;
+            const title = document.getElementById('resTitle').value.trim();
+            const confirmationNumber = document.getElementById('resConfirm').value.trim();
+            const startDateTime = document.getElementById('resStart').value;
+            const endDateTime = document.getElementById('resEnd').value;
+            const memo = document.getElementById('resMemo').value.trim();
+
+            if (!title) { alert('제목을 입력해주세요!'); return; }
+            if (!startDateTime) { alert('시작 일시를 입력해주세요!'); return; }
+
+            fetch(`/api/trips/${routeId}/reservations`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ type, title, confirmationNumber, startDateTime, endDateTime, memo })
+            }).then(r => {
+                if (r.ok) {
+                    document.getElementById('resTitle').value = '';
+                    document.getElementById('resConfirm').value = '';
+                    document.getElementById('resStart').value = '';
+                    document.getElementById('resEnd').value = '';
+                    document.getElementById('resMemo').value = '';
+                    loadReservations();
+                }
+            });
+        }
+
+        function deleteReservation(reservationId) {
+            if (!confirm('이 예약 정보를 삭제할까요?')) return;
+            fetch(`/api/reservations/${reservationId}`, { method: 'DELETE' })
+                .then(r => { if (r.ok) loadReservations(); });
+        }
 
         function togglePublic() {
             const btn = document.getElementById('publicBtn');

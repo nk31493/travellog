@@ -191,9 +191,11 @@
                     </div>
                 </a>
                 <div class="card-body">
-                    <div class="card-author">
-                        👤 <span th:text="${route.user.nickname}"></span>님의 여행
-                    </div>
+                    <a th:href="@{/user/{id}(id=${route.user.id})}"
+                        class="card-author"
+                        style="text-decoration:none;color:var(--text-muted);display:block;">
+                            👤 <span th:text="${route.user.nickname}"></span>님의 여행
+                        </a>
                     <div class="card-footer">
                         <div class="card-pins">
                             📍 <span th:text="${#lists.size(route.pins)}"></span>개의 장소

@@ -31,6 +31,7 @@ public class TravelRouteController {
     private final com.side.travellog.domain.user.UserRepository userRepository;
     private final TravelRouteLikeRepository likeRepository;
     private final TravelRouteRepository travelRouteRepository;
+    private final ReservationService reservationService;
 
     @Value("${google.maps.key}")
     private String googleMapsKey;
@@ -608,7 +609,27 @@ public class TravelRouteController {
     public ResponseEntity<?> updatePublic(@PathVariable Long routeId,
                                         @AuthenticationPrincipal UserDetails userDetails,
                                         @RequestBody Map<String, Boolean> body) {
-        travelRouteService.updatePublic(routeId, userDetails.getUsername(), body.get("isPublic"));
+        boolean isPublic = body.get("isPublic");
+        travelRouteService.updatePublic(routeId, userDetails.getUsername(), isPublic);
+
+        // 협업자들에게 알림
+        TravelRoute route = travelRouteRepository.findById(routeId)
+                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 여행입니다."));
+        com.side.travellog.domain.user.User actor =
+                userRepository.findByEmail(userDetails.getUsername());
+        String statusText = isPublic ? "공개" : "비공개";
+        String msg = actor.getNickname() + "님이 '" + route.getName() + "' 여행을 " + statusText + "로 전환했어요!";
+        String link = "/trips/" + routeId;
+
+        if (!route.getUser().getId().equals(actor.getId())) {
+            notificationService.send(route.getUser(), msg, link);
+        }
+        travelRouteService.getCollaborators(routeId, userDetails.getUsername()).forEach(collaborator -> {
+            if (!collaborator.getId().equals(actor.getId())) {
+                notificationService.send(collaborator, msg, link);
+            }
+        });
+
         return ResponseEntity.ok().build();
     }
 
@@ -662,6 +683,65 @@ public class TravelRouteController {
         Map<String, Object> result = new HashMap<>();
         result.put("routeId", copy.getId());
         return ResponseEntity.ok(result);
+    }
+
+    @PostMapping("/api/trips/{routeId}/reservations")
+    @ResponseBody
+    public Map<String, Object> addReservation(@PathVariable Long routeId,
+                                            @AuthenticationPrincipal UserDetails userDetails,
+                                            @RequestBody Map<String, String> body) {
+        java.time.LocalDateTime start = java.time.LocalDateTime.parse(body.get("startDateTime"));
+        java.time.LocalDateTime end = body.get("endDateTime") != null && !body.get("endDateTime").isEmpty()
+                ? java.time.LocalDateTime.parse(body.get("endDateTime")) : null;
+
+        Reservation r = reservationService.addReservation(routeId, userDetails.getUsername(),
+                body.get("type"), body.get("title"), body.get("confirmationNumber"),
+                start, end, body.get("memo"));
+
+        return toReservationMap(r);
+    }
+
+    @GetMapping("/api/trips/{routeId}/reservations")
+    @ResponseBody
+    public List<Map<String, Object>> getReservations(@PathVariable Long routeId,
+                                                    @AuthenticationPrincipal UserDetails userDetails) {
+        return reservationService.getReservations(routeId, userDetails.getUsername())
+                .stream().map(this::toReservationMap).toList();
+    }
+
+    @PutMapping("/api/reservations/{reservationId}")
+    @ResponseBody
+    public ResponseEntity<?> updateReservation(@PathVariable Long reservationId,
+                                                @AuthenticationPrincipal UserDetails userDetails,
+                                                @RequestBody Map<String, String> body) {
+        java.time.LocalDateTime start = java.time.LocalDateTime.parse(body.get("startDateTime"));
+        java.time.LocalDateTime end = body.get("endDateTime") != null && !body.get("endDateTime").isEmpty()
+                ? java.time.LocalDateTime.parse(body.get("endDateTime")) : null;
+
+        reservationService.updateReservation(reservationId, userDetails.getUsername(),
+                body.get("type"), body.get("title"), body.get("confirmationNumber"),
+                start, end, body.get("memo"));
+        return ResponseEntity.ok().build();
+    }
+
+    @DeleteMapping("/api/reservations/{reservationId}")
+    @ResponseBody
+    public ResponseEntity<?> deleteReservation(@PathVariable Long reservationId,
+                                                @AuthenticationPrincipal UserDetails userDetails) {
+        reservationService.deleteReservation(reservationId, userDetails.getUsername());
+        return ResponseEntity.ok().build();
+    }
+
+    private Map<String, Object> toReservationMap(Reservation r) {
+        Map<String, Object> map = new HashMap<>();
+        map.put("reservationId", r.getId());
+        map.put("type", r.getType());
+        map.put("title", r.getTitle());
+        map.put("confirmationNumber", r.getConfirmationNumber());
+        map.put("startDateTime", r.getStartDateTime().toString());
+        map.put("endDateTime", r.getEndDateTime() != null ? r.getEndDateTime().toString() : null);
+        map.put("memo", r.getMemo());
+        return map;
     }
     
 }

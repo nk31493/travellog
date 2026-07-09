@@ -179,7 +179,10 @@
             <span th:if="${route.endDate != null}"> ~ </span>
             <span th:text="${route.endDate}"></span>
         </div>
-        <div class="cover-author">👤 <span th:text="${route.user.nickname}"></span>님의 여행</div>
+        <a th:href="@{/user/{id}(id=${route.user.id})}"
+            class="cover-author" style="color:white;text-decoration:underline;">
+            👤 <span th:text="${route.user.nickname}"></span>님의 여행
+        </a>
     </div>
 
     <div class="day-tabs-wrap" id="dayTabs"></div>

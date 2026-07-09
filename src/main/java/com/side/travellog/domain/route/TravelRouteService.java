@@ -29,6 +29,7 @@ public class TravelRouteService {
     private final UserRepository userRepository;
     private final RouteCollaboratorRepository routeCollaboratorRepository;
     private final ChecklistItemRepository checklistItemRepository;
+    private final ReservationRepository reservationRepository;
 
     public List<TravelRoute> getRoutesByUser(String email) {
         User user = userRepository.findByEmail(email);
@@ -100,6 +101,7 @@ public class TravelRouteService {
             }
             expenseRepository.deleteByTravelRoute(route);
             checklistItemRepository.deleteByTravelRoute(route);
+            reservationRepository.deleteByTravelRoute(route);
             routeCollaboratorRepository.deleteByTravelRoute(route);
             travelPinRepository.deleteByTravelRoute(route);
             travelRouteRepository.delete(route);
@@ -121,6 +123,7 @@ public class TravelRouteService {
             // 새 소유자는 협업자 목록에서 제거
             routeCollaboratorRepository.delete(newOwnerCollaborator);
         }
+
     }
 
     @Transactional
@@ -275,10 +278,15 @@ public class TravelRouteService {
             throw new IllegalArgumentException("소유자만 초대할 수 있습니다.");
         }
 
-        User invitee = userRepository.findByNickname(nickname);
-        if (invitee == null) {
+        List<User> invitees = userRepository.findAllByNickname(nickname);
+        if (invitees.isEmpty()) {
             throw new IllegalArgumentException("존재하지 않는 닉네임입니다.");
         }
+        if (invitees.size() > 1) {
+            throw new IllegalArgumentException("동일한 닉네임을 가진 사용자가 여러 명이에요. 다른 방법으로 초대해주세요.");
+        }
+        User invitee = invitees.get(0);
+
         if (invitee.getId().equals(requester.getId())) {
             throw new IllegalArgumentException("본인은 초대할 수 없습니다.");
         }
@@ -291,7 +299,6 @@ public class TravelRouteService {
                 .user(invitee)
                 .build());
 
-        // 초대받은 사람에게 알림
         notificationService.send(
                 invitee,
                 requester.getNickname() + "님이 '" + route.getName() + "' 여행에 초대했어요!",
