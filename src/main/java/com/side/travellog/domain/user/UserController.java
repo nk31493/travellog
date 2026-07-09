@@ -71,6 +71,19 @@ public class UserController {
         return ResponseEntity.ok().build();
     }
 
+    @PutMapping("/api/mypage/password")
+    @ResponseBody
+    public ResponseEntity<?> updatePassword(@AuthenticationPrincipal UserDetails userDetails,
+                                            @RequestBody Map<String, String> body) {
+        try {
+            userService.updatePassword(userDetails.getUsername(),
+                    body.get("currentPassword"), body.get("newPassword"));
+            return ResponseEntity.ok().build();
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+
     @GetMapping("/api/mypage/stats")
     @ResponseBody
     public Map<String, Object> getStats(@AuthenticationPrincipal UserDetails userDetails) {
