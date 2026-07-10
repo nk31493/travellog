@@ -1,13 +1,16 @@
 package com.side.travellog.domain.pin;
 
+import com.side.travellog.domain.notification.NotificationRepository;
 import com.side.travellog.domain.route.RouteCollaboratorRepository;
 import com.side.travellog.domain.route.TravelRoute;
 import com.side.travellog.domain.route.TravelRouteRepository;
 import com.side.travellog.domain.route.TravelRouteService;
 import com.side.travellog.domain.user.User;
 import com.side.travellog.domain.user.UserRepository;
+
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
@@ -17,6 +20,9 @@ import java.util.List;
 @RequiredArgsConstructor
 public class TravelPinService {
 
+    private final PinPhotoRepository pinPhotoRepository;
+    private final PinCommentRepository pinCommentRepository;
+    private final NotificationRepository notificationRepository;
     private final TravelPinRepository travelPinRepository;
     private final TravelRouteRepository travelRouteRepository;
     private final UserRepository userRepository;
@@ -68,11 +74,40 @@ public class TravelPinService {
             }
         }
 
-        // 현재 같은 날짜의 핀 개수를 orderNum으로 설정
         List<TravelPin> existingPins = travelPinRepository.findByTravelRouteOrdered(route);
-        int orderNum = (int) existingPins.stream()
+
+        // 같은 날짜의 핀들 중에서 새 핀의 시간에 맞는 위치를 찾아서 orderNum 삽입
+        List<TravelPin> sameDatePins = existingPins.stream()
                 .filter(p -> p.getVisitDate() != null && p.getVisitDate().equals(visitDate))
-                .count();
+                .sorted((a, b) -> {
+                    if (a.getVisitTime() == null && b.getVisitTime() == null) return 0;
+                    if (a.getVisitTime() == null) return 1;
+                    if (b.getVisitTime() == null) return -1;
+                    return a.getVisitTime().compareTo(b.getVisitTime());
+                })
+                .toList();
+
+        int insertPosition = 0;
+        for (TravelPin p : sameDatePins) {
+            if (visitTime == null) {
+                insertPosition++; // 시간 없으면 맨 뒤로
+                continue;
+            }
+            if (p.getVisitTime() == null || visitTime.compareTo(p.getVisitTime()) >= 0) {
+                insertPosition++;
+            } else {
+                break;
+            }
+        }
+
+        // 삽입 위치 이후의 핀들 orderNum을 한 칸씩 밀어줌
+        List<TravelPin> pinsToShift = sameDatePins.subList(insertPosition, sameDatePins.size());
+        for (TravelPin p : pinsToShift) {
+            p.updateOrderNum((p.getOrderNum() == null ? 0 : p.getOrderNum()) + 1);
+            travelPinRepository.save(p);
+        }
+
+        int orderNum = insertPosition;
 
         TravelPin pin = TravelPin.builder()
             .user(user)
@@ -110,8 +145,12 @@ public class TravelPinService {
         travelPinRepository.save(pin);
     }
 
+    @org.springframework.transaction.annotation.Transactional
     public void deletePin(Long pinId, String email) {
         TravelPin pin = getPinById(pinId, email);
+        notificationRepository.deleteByLinkContaining("/pin/" + pinId);
+        pinCommentRepository.deleteByTravelPin(pin);
+        pinPhotoRepository.deleteByTravelPin(pin);
         travelPinRepository.delete(pin);
     }
 
@@ -121,6 +160,7 @@ public class TravelPinService {
         travelPinRepository.save(pin);
     }
 
+    @Transactional
     public void updateOrder(Long routeId, List<Long> pinIds, String email) {
         checkRouteAccess(routeId, email);
 
@@ -128,7 +168,7 @@ public class TravelPinService {
             TravelPin pin = travelPinRepository.findById(pinIds.get(i))
                     .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 핀입니다."));
             pin.updateOrderNum(i);
-            travelPinRepository.save(pin);
+            travelPinRepository.save(pin);  // <- 핀마다 각각 저장
         }
     }
 

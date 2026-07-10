@@ -2,8 +2,11 @@ package com.side.travellog.domain.notification;
 
 import com.side.travellog.domain.user.User;
 import com.side.travellog.domain.user.UserRepository;
+
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
 import java.util.List;
 
 @Service
@@ -31,6 +34,7 @@ public class NotificationService {
         return notificationRepository.countByUserAndIsReadFalse(user);
     }
 
+    @Transactional
     public void markAllAsRead(String email) {
         User user = userRepository.findByEmail(email);
         List<Notification> notifications = notificationRepository.findByUserOrderByCreatedAtDesc(user);

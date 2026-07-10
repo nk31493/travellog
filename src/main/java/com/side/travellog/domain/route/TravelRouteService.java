@@ -1,5 +1,6 @@
 package com.side.travellog.domain.route;
 
+import com.side.travellog.domain.notification.NotificationRepository;
 import com.side.travellog.domain.notification.NotificationService;
 import com.side.travellog.domain.pin.PinCommentRepository;
 import com.side.travellog.domain.pin.PinPhotoRepository;
@@ -19,6 +20,7 @@ import java.util.List;
 @RequiredArgsConstructor
 public class TravelRouteService {
 
+    private final NotificationRepository notificationRepository;
     private final NotificationService notificationService;
     private final ExpenseRepository expenseRepository;
     private final SettlementCheckRepository settlementCheckRepository;
@@ -29,7 +31,6 @@ public class TravelRouteService {
     private final UserRepository userRepository;
     private final RouteCollaboratorRepository routeCollaboratorRepository;
     private final ChecklistItemRepository checklistItemRepository;
-    private final ReservationRepository reservationRepository;
 
     public List<TravelRoute> getRoutesByUser(String email) {
         User user = userRepository.findByEmail(email);
@@ -65,6 +66,8 @@ public class TravelRouteService {
 
     public TravelRoute createRoute(String email, String name, String destination,
                                     LocalDate startDate, LocalDate endDate) {
+        validateRouteInfo(name, destination, startDate, endDate);
+
         User user = userRepository.findByEmail(email);
         TravelRoute route = TravelRoute.builder()
                 .user(user)
@@ -92,6 +95,7 @@ public class TravelRouteService {
             for (TravelPin pin : pins) {
                 pinCommentRepository.deleteByTravelPin(pin);
                 pinPhotoRepository.deleteByTravelPin(pin);
+                notificationRepository.deleteByLinkContaining("/pin/" + pin.getId());
             }
             // 경비 정산 체크 먼저 삭제
             List<com.side.travellog.domain.route.Expense> expenses =
@@ -101,7 +105,7 @@ public class TravelRouteService {
             }
             expenseRepository.deleteByTravelRoute(route);
             checklistItemRepository.deleteByTravelRoute(route);
-            reservationRepository.deleteByTravelRoute(route);
+            notificationRepository.deleteByLinkContaining("/trips/" + routeId);
             routeCollaboratorRepository.deleteByTravelRoute(route);
             travelPinRepository.deleteByTravelRoute(route);
             travelRouteRepository.delete(route);
@@ -129,6 +133,8 @@ public class TravelRouteService {
     @Transactional
     public void updateRoute(Long routeId, String email, String name,
                         String destination, LocalDate startDate, LocalDate endDate) {
+        validateRouteInfo(name, destination, startDate, endDate);
+
         TravelRoute route = getRouteByIdWithAccess(routeId, email);
         route.updateInfo(name, destination, startDate, endDate);
         travelRouteRepository.save(route);
@@ -143,6 +149,21 @@ public class TravelRouteService {
                 pinPhotoRepository.deleteByTravelPin(pin);
                 travelPinRepository.delete(pin);
             }
+        }
+    }
+
+    private void validateRouteInfo(String name, String destination, LocalDate startDate, LocalDate endDate) {
+        if (name == null || name.isBlank()) {
+            throw new IllegalArgumentException("여행 이름을 입력해주세요.");
+        }
+        if (name.length() > 100) {
+            throw new IllegalArgumentException("여행 이름은 100자 이하로 입력해주세요.");
+        }
+        if (destination != null && destination.length() > 100) {
+            throw new IllegalArgumentException("여행지는 100자 이하로 입력해주세요.");
+        }
+        if (startDate != null && endDate != null && startDate.isAfter(endDate)) {
+            throw new IllegalArgumentException("종료일은 시작일보다 빠를 수 없어요.");
         }
     }
 

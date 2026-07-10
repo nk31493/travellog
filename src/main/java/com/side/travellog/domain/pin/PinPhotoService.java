@@ -3,9 +3,11 @@ package com.side.travellog.domain.pin;
 import com.side.travellog.domain.route.RouteCollaboratorRepository;
 import com.side.travellog.domain.user.User;
 import com.side.travellog.domain.user.UserRepository;
+
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.File;
@@ -112,6 +114,7 @@ public class PinPhotoService {
         pinPhotoRepository.delete(photo);
     }
 
+    @Transactional
     public void setRepresentative(Long photoId, String email) {
         PinPhoto photo = pinPhotoRepository.findById(photoId)
                 .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 사진입니다."));

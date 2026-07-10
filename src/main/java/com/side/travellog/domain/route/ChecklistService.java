@@ -2,8 +2,11 @@ package com.side.travellog.domain.route;
 
 import com.side.travellog.domain.user.User;
 import com.side.travellog.domain.user.UserRepository;
+
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
 import java.util.List;
 
 @Service
@@ -31,6 +34,7 @@ public class ChecklistService {
         return route;
     }
 
+    @Transactional
     public void createDefaultItems(TravelRoute route, User user) {
         for (int i = 0; i < DEFAULT_ITEMS.size(); i++) {
             checklistItemRepository.save(ChecklistItem.builder()

@@ -45,6 +45,12 @@ public class UserService {
     }
 
     public void updateNickname(String email, String nickname) {
+        if (nickname == null || nickname.isBlank()) {
+            throw new IllegalArgumentException("닉네임을 입력해주세요.");
+        }
+        if (nickname.length() < 2 || nickname.length() > 20) {
+            throw new IllegalArgumentException("닉네임은 2자 이상 20자 이하로 입력해주세요.");
+        }
         User user = userRepository.findByEmail(email);
         user.updateNickname(nickname);
         userRepository.save(user);
